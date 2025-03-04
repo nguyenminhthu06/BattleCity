@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1739842254 source:d:\a_teaching\ltnc\2024\demo\main.cpp
+	<iostream>
+	<SDL.h>
+	<SDL_image.h>
+
