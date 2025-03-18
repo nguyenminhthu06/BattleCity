@@ -1,5 +1,25 @@
 # depslib dependency file v1.0
-1739842254 source:d:\a_teaching\ltnc\2024\demo\main.cpp
+1742259412 source:d:\a_teaching\ltnc\2024\demo\main.cpp
+	<iostream>
+	<SDL.h>
+	<SDL_image.h>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1741956134 d:\a_teaching\ltnc\2024\demo\wall.h
+	<SDL.h>
+
+1741956577 d:\a_teaching\ltnc\2024\demo\playertank.h
+	<SDL.h>
+	<vector>
+	"Wall.h"
+	"constants.h"
+
+1741956560 d:\a_teaching\ltnc\2024\demo\constants.h
+
+1742259200 source:d:\a_teaching\ltnc\2024\demo\demo1.cpp
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
