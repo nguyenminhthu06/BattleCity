@@ -8,7 +8,7 @@
 	<cstdlib>
 	<ctime>
 
-1741956134 d:\a_teaching\ltnc\2024\demo\wall.h
+1743868507 d:\a_teaching\ltnc\2024\demo\wall.h
 	<SDL.h>
 
 1741956577 d:\a_teaching\ltnc\2024\demo\playertank.h
@@ -17,10 +17,14 @@
 	"Wall.h"
 	"constants.h"
 
-1741956560 d:\a_teaching\ltnc\2024\demo\constants.h
+1743868884 d:\a_teaching\ltnc\2024\demo\constants.h
 
 1742259200 source:d:\a_teaching\ltnc\2024\demo\demo1.cpp
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
+
+1743868685 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
+	"Wall.h"
+	"constants.h"
 
