@@ -7,101 +7,10 @@
 #include <ctime>
 #include<Wall.h>
 #include "constants.h"
+#include<Bullet.h>
+#include<Tank.h>
 using namespace std;
-class Bullet {
-public:
-    int x, y;
-    int dx, dy;
-    SDL_Rect rect;
-    bool active;
 
-    Bullet(int startX, int startY, int dirX, int dirY) {
-        x = startX;
-        y = startY;
-        dx = dirX * 5;
-        dy = dirY * 5;
-        active = true;
-        rect = {x, y, 10, 10};
-    }
-
-    void move() {
-        x += dx;
-        y += dy;
-        rect.x = x;
-        rect.y = y;
-        if (x < 0 || x > SCREEN_WIDTH || y < 0 || y > SCREEN_HEIGHT) {
-            active = false;
-        }
-    }
-
-    void render(SDL_Renderer* renderer, SDL_Texture* texture) const {
-        if (active) {
-            SDL_RenderCopy(renderer, texture, NULL, &rect);
-        }
-    }
-};
-
-class Tank {
-public:
-    int x, y;
-    int dirX, dirY;
-    SDL_Rect rect;
-    vector<Bullet> bullets;
-
-    Tank(int startX, int startY) {
-        x = startX;
-        y = startY;
-        rect = {x, y, TILE_SIZE, TILE_SIZE};
-        dirX = 0;
-        dirY = -1;
-    }
-
-    void shoot() {
-        bullets.push_back(Bullet(x + TILE_SIZE / 2 - 5, y + TILE_SIZE / 2 - 5, dirX, dirY));
-    }
-
-    void updateBullets() {
-        for (auto& bullet : bullets) {
-            bullet.move();
-        }
-        bullets.erase(remove_if(bullets.begin(), bullets.end(),
-                                [](Bullet& b) { return !b.active; }), bullets.end());
-    }
-};
-
-class PlayerTank : public Tank {
-public:
-    PlayerTank(int startX, int startY) : Tank(startX, startY) {}
-
-    void move(int dx, int dy, const vector<Wall>& walls) {
-        int newX = x + dx;
-        int newY = y + dy;
-        dirX = dx;
-        dirY = dy;
-
-        SDL_Rect newRect = {newX, newY, TILE_SIZE, TILE_SIZE};
-        for (const auto& wall : walls) {
-            if (wall.active && SDL_HasIntersection(&newRect, &wall.rect)) {
-                return;
-            }
-        }
-
-        if (newX >= 0 && newX + TILE_SIZE <= SCREEN_WIDTH &&
-            newY >= 0 && newY + TILE_SIZE <= SCREEN_HEIGHT) {
-            x = newX;
-            y = newY;
-            rect.x = x;
-            rect.y = y;
-        }
-    }
-
-    void render(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Texture* bulletTexture) const {
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-        for (const auto& bullet : bullets) {
-            bullet.render(renderer, bulletTexture);
-        }
-    }
-};
 
 class EnemyTank : public Tank {
 public:

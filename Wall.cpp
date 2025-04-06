@@ -12,7 +12,7 @@ Wall::Wall(int startX, int startY) {
 }
 
 void Wall::render(SDL_Renderer* renderer, SDL_Texture* texture)
-{
+const {
     if (active)
     {
         SDL_SetRenderDrawColor(renderer, 150, 70, 0, 255);

@@ -32,7 +32,13 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Bullet.cpp" />
+		<Unit filename="Bullet.h" />
 		<Unit filename="PlayerTank.h" />
+		<Unit filename="Tank.cpp" />
+		<Unit filename="Tank.h" />
+		<Unit filename="Wall.cpp" />
+		<Unit filename="Wall.h" />
 		<Unit filename="constants.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
