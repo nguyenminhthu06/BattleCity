@@ -34,6 +34,7 @@
 		</Compiler>
 		<Unit filename="Bullet.cpp" />
 		<Unit filename="Bullet.h" />
+		<Unit filename="PlayerTank.cpp" />
 		<Unit filename="PlayerTank.h" />
 		<Unit filename="Tank.cpp" />
 		<Unit filename="Tank.h" />
