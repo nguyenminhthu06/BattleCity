@@ -1,38 +1,27 @@
 # depslib dependency file v1.0
-1744074394 source:d:\a_teaching\ltnc\2024\demo\main.cpp
-	<iostream>
+1744349952 source:d:\a_teaching\ltnc\2024\demo\main.cpp
+	"Game.h"
+	"Constants.h"
+
+1744349952 d:\a_teaching\ltnc\2024\demo\wall.h
 	<SDL.h>
-	<SDL_image.h>
+	"Constants.h"
+
+1744349952 d:\a_teaching\ltnc\2024\demo\playertank.h
 	<vector>
-	<algorithm>
-	<cstdlib>
-	<ctime>
-	<Wall.h>
-	"constants.h"
-	<Bullet.h>
-	<Tank.h>
-	<PlayerTank.h>
-	<EnemyTank.h>
-	<Game.h>
-
-1743870043 d:\a_teaching\ltnc\2024\demo\wall.h
-	<SDL.h>
-
-1743955966 d:\a_teaching\ltnc\2024\demo\playertank.h
-	"Tank.h"
 	"Wall.h"
-	<vector>
+	<SDL.h>
+	"Constants.h"
 
-1743868884 d:\a_teaching\ltnc\2024\demo\constants.h
+1744349952 d:\a_teaching\ltnc\2024\demo\constants.h
 
 1742259200 source:d:\a_teaching\ltnc\2024\demo\demo1.cpp
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
 
-1743870043 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
+1744349774 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
 	"Wall.h"
-	"constants.h"
 
 1743870043 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
 	"Bullet.h"
@@ -51,14 +40,8 @@
 	<vector>
 	<Bullet.h>
 
-1743956120 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
-	<SDL.h>
-	<vector>
-	<algorithm>
-	"Tank.h"
-	"constants.h"
+1744349774 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
 	"PlayerTank.h"
-	"Wall.h"
 
 1744073338 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
 	<SDL.h>
@@ -89,11 +72,10 @@
 	"EnemyTank.h"
 	"Game.h"
 
-1744075339 d:\a_teaching\ltnc\2024\demo\game.h
-	"Tank.h"
-	"Bullet.h"
+1744349952 d:\a_teaching\ltnc\2024\demo\game.h
+	<SDL.h>
 	<vector>
-	"Wall.h"
 	"PlayerTank.h"
-	"EnemyTank.h"
+	"Wall.h"
+	"Constants.h"
 

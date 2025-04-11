@@ -1,13 +1,16 @@
-
 #pragma once
-#include "Tank.h"
-#include "Wall.h"
-#include <vector>
+#include<vector>
+#include"Wall.h"
+#include<SDL.h>
+#include "Constants.h"
 
-class PlayerTank : public Tank {
+class PlayerTank{
 public:
-    PlayerTank(int startX, int startY);
+    int x, y;
+    int dirX,dirY;
+    SDL_Rect rect;
 
-    void move(int dx, int dy, const std::vector<Wall>& walls);
-    void render(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Texture* bulletTexture) const;
+    PlayerTank (int startX, int startY);
+    void move(int dx, int dy, const std::vector<Wall> &walls);
+    void render(SDL_Renderer* renderer);
 };
