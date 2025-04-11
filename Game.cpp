@@ -1,4 +1,5 @@
 #include<iostream>
+#include<algorithm>
 #include"Game.h"
 
 Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
@@ -22,6 +23,7 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
             running = false;
         }
         generateWalls();
+        spawnEnemies();
         //player = PlayerTank(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE);
     }
 void Game::generateWalls()
@@ -56,10 +58,36 @@ void Game::handleEvents()
                                   break;
                     case SDLK_RIGHT: player.move(5, 0, walls);
                                   break;
+                    case SDLK_SPACE: player.shoot(); break;
+
                 }
             }
         }
     }
+void Game::spawnEnemies()
+{
+    enemies.clear();
+    for(int i = 0; i < enemyNumber; i++)
+    {
+        int ex,ey;
+        bool validPosition = false;
+        while(!validPosition)
+        {
+            ex = (rand() % (MAP_WIDTH -2)+1)*TILE_SIZE;
+            ey = (rand() % (MAP_HEIGHT -2)+1)*TILE_SIZE;
+            validPosition = true;
+            for(const auto &wall : walls)
+            {
+                if(wall.active && wall.x == ex && wall.y == ey)
+                {
+                    validPosition = false;
+                    break;
+                }
+            }
+        }
+        enemies.push_back(EnemyTank(ex,ey));
+    }
+}
 void Game::render()
     {
         SDL_SetRenderDrawColor(renderer, 78, 176, 155, 255);
@@ -71,23 +99,109 @@ void Game::render()
             for(int j = 1; j< MAP_WIDTH - 1; j++)
             {
                 SDL_Rect tile = {j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE};
-                SDL_RenderFillRect(renderer,&tile);
+                SDL_RenderFillRect(renderer, &tile);
             }
         }
-        for(size_t i=0;i<walls.size();i++)
+        for(size_t i=0;i< walls.size();i++)
         {
             walls[i].render(renderer);
         }
 
         player.render(renderer);
+        for(auto &enemy : enemies)
+        {
+            enemy.render(renderer);
+        }
 
         SDL_RenderPresent(renderer);
     }
+void Game::update()
+{
+    player.updateBullets();
+
+    for(auto& bullet : player.bullets)
+    {
+        for(auto& enemy : enemies)
+        {
+            if(enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect))
+            {
+                enemy.active = false;
+                bullet.active = false;
+                break;
+            }
+        }
+    }
+    for(auto& enemy : enemies)
+    {
+        enemy.move(walls);
+        enemy.updateBullets();
+        if(rand() % 100 < 2)
+        {
+            enemy.shoot();
+        }
+    }
+    for(auto& enemy : enemies)
+    {
+        for(auto& bullet : enemy.bullets)
+        {
+            for(auto& wall : walls)
+            {
+                if(wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect))
+                {
+                    wall.active = false;
+                    bullet.active = false;
+                    break;
+                }
+            }
+        }
+    }
+    for(auto& bullet : player.bullets)
+    {
+        for(auto& wall : walls)
+        {
+            if(wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect))
+            {
+                wall.active = false;
+                bullet.active = false;
+                break;
+            }
+        }
+    }
+    for(auto& bullet : player.bullets)
+    {
+        for(auto& enemy : enemies)
+        {
+            if(enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect))
+            {
+                enemy.active = false;
+                bullet.active = false;
+            }
+        }
+    }
+    enemies.erase(std::remove_if(enemies.begin(),enemies.end(),[](EnemyTank &e){return !e.active; }), enemies.end());
+
+    if(enemies.empty())
+    {
+        running = false;
+    }
+    for(auto& enemy : enemies)
+    {
+        for(auto& bullet : enemy.bullets)
+        {
+            if(SDL_HasIntersection(&bullet.rect, &player.rect))
+            {
+                running = false;
+                return;
+            }
+        }
+    }
+}
 void Game::run()
     {
        while(running)
        {
            handleEvents();
+           update();
            render();
            SDL_Delay(16);
        }

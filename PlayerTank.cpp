@@ -1,5 +1,5 @@
 #include "PlayerTank.h"
-
+#include <algorithm>
 PlayerTank::PlayerTank (int startX, int startY)
 {
     x = startX;
@@ -34,9 +34,24 @@ void PlayerTank::move(int dx, int dy, const std::vector<Wall> &walls)
         rect.y = y;
     }
 }
-
+void PlayerTank::shoot()
+{
+    bullets.push_back(Bullet(x + TILE_SIZE/2 - 5, y + TILE_SIZE / 2 - 5, this->dirX, this->dirY));
+}
+void PlayerTank::updateBullets()
+{
+    for(auto &bullet : bullets)
+    {
+        bullet.move();
+    }
+    bullets.erase(std::remove_if(bullets.begin(),bullets.end(),[](Bullet &b){return !b.active;}),bullets.end());
+}
 void PlayerTank::render(SDL_Renderer* renderer)
 {
     SDL_SetRenderDrawColor(renderer, 255, 182, 175, 255);
     SDL_RenderFillRect(renderer, &rect);
+    for(auto &bullet : bullets)
+    {
+        bullet.render(renderer);
+    }
 }
