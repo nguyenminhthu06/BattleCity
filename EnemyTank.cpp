@@ -22,21 +22,21 @@ void EnemyTank::move(const std::vector<Wall> &walls)
         if(r == 0)
         {
             this->dirX = 0;
-            this->dirY = -5;
+            this->dirY = -9;
         }
         else if(r == 1)
         {
             this->dirX = 0;
-            this->dirY = 5;
+            this->dirY = 9;
         }
         else if(r == 2)
         {
-            this->dirX = -5;
+            this->dirX = -9;
             this->dirY = 0;
         }
         else if(r == 3)
         {
-            this->dirX = 5;
+            this->dirX = 9;
             this->dirY = 0;
         }
         int newX = x+ this->dirX;

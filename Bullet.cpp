@@ -7,7 +7,7 @@ Bullet::Bullet(int startX, int startY, int dirX, int dirY)
         dx = dirX;
         dy = dirY;
         active = true;
-        rect = {x,y,10,10};
+        rect = {x,y,10,15};
     }
 
 void Bullet::move()
