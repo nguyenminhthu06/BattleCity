@@ -9,6 +9,6 @@ public:
     bool active;
 
     Wall(int startX, int startY);
-    void render(SDL_Renderer* renderer);
+    void render(SDL_Renderer* renderer) const;  // Add const
 
 };

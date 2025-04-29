@@ -1,106 +1,102 @@
 #pragma once
-#include<SDL.h>
-#include<SDL_image.h>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_mixer.h>
+#include <SDL_ttf.h>
 #include <vector>
-#include<string>
+#include <string>
 #include "PlayerTank.h"
 #include "Wall.h"
 #include "EnemyTank.h"
 #include "Constants.h"
-#include <SDL_mixer.h>
-#include <SDL_ttf.h>
-#include"Audio.h"
 
 class Game {
 public:
     SDL_Window* window;
     SDL_Renderer* renderer;
-    TTF_Font* font;
-    bool running;
-    bool inMenu;
-
-    std::vector<Wall> walls;
     PlayerTank player;
+    std::vector<Wall> walls;
     std::vector<EnemyTank> enemies;
     int enemyNumber = 3;
+    bool running;
 
-    SDL_Texture* menuBackgroundTexture;
-    SDL_Texture* instructionTexture;
-    SDL_Texture* instructionBgTexture;
-    SDL_Texture* gameOverTexture;
-    SDL_Texture* victoryTexture;
-    SDL_Texture* playerTankTexture;
-    SDL_Rect playerTankRect;
-
-    Audio audio;
-    bool loadAudioResources();
-
-    enum class GameState
-    {
-        MENU,
+    enum class GameState {
+        MAIN_MENU,
         INSTRUCTIONS,
         PLAYING,
         GAME_OVER,
         VICTORY,
         CONSTRUCTION
-};
+    };
     GameState state;
-     struct MenuButton {
+
+    struct Button {
         SDL_Rect rect;
-        SDL_Texture* texture;
-        bool isHovered;
-    };
-
-    void updateConstruction();
-
-    void handleConstructionEvents();
-    void renderConstruction();
-
-    MenuButton player1Button;
-    MenuButton constructionButton;
-    int selectedMenuOption; // 0 = 1 PLAYER, 1 = CONSTRUCTION
-    TTF_Font* menuFont;
-    SDL_Texture* menuBackground;
-    SDL_Texture* createButtonTexture(const std::string& text);
-
-    struct Button
-    {
-        SDL_Rect rect;
-        SDL_Texture* texture;
-        SDL_Texture* hoverTexture;
+        SDL_Texture* normal;
+        SDL_Texture* hover;
+        float scale = 1.0f;
+        float targetScale = 1.0f;
         bool isHovered = false;
+
+        void update() {
+            const float speed = 0.1f;
+            scale += (targetScale - scale) * speed;
+        }
+        bool contains(int x, int y) const {
+        return (x >= rect.x && x <= rect.x + rect.w &&
+                y >= rect.y && y <= rect.y + rect.h);
+    }
     };
-
-    Button playButtonMenu;
-    Button playButtonGame;
-    Button retryButton;
-    Button menuButton;
-
     Game();
     ~Game();
 
-    SDL_Texture* loadTexture(const std::string& path);
     void run();
     void handleEvents();
-    void update();
+    void update(float deltaTime = 0.0f);  // Updated
     void render();
+    void resetGame();
+    void updateMusic();
+    // Game objects
+    TTF_Font* font;
+    TTF_Font* boldfont;
+    Button playButton;
+    Button helpButton;
+    Button retryButton;    // Added
+    Button menuButton;     // Added
 
+    SDL_Texture* backgroundTexture;
+    SDL_Texture* tankGuideTexture;
+    SDL_Texture* gameOverTexture;
+    SDL_Texture* victoryTexture;
+    SDL_Texture* instructionTexture;
+
+    // Audio
+    Mix_Music* bgMusic;
+    Mix_Chunk* clickSound;
+    Mix_Chunk* hoverSound;
+    Mix_Chunk* bulletSound;
+    Mix_Chunk* gameOverSound;
+    Mix_Chunk* victorySound;
+
+
+    // Helper methods
     void initMenu();
     void generateWalls();
     void spawnEnemies();
+    SDL_Texture* loadTexture(const std::string& path);
+    void renderText(const std::string& text, int x, int y, SDL_Color color);
+    void renderBoldText(const std::string& text, int x, int y, SDL_Color color);
+    bool isMouseOver(const SDL_Rect& rect, int x, int y);
+    void updateTankAnimation();
+    void renderTank();
 
+    // State handlers
     void handleMenuEvents();
     void handleInstructionEvents();
-    void renderMenu();
-    void renderInstructions();
     void handleGameOverEvents();
     void handleVictoryEvents();
-
+    void renderMenu();
+    void renderInstructions();
     void renderGameOver();
     void renderVictory();
-    void handleEndScreenEvents();
-    void resetGame();
-
-    void renderText(const std::string& text, int x, int y, SDL_Color color);
-
 };

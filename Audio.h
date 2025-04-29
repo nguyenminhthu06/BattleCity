@@ -26,7 +26,8 @@ public:
     // State management
     void toggleMute();
     bool isMuted() const;
-
+    void addSound(const std::string& name, Mix_Chunk* sound);
+    void createDefaultSound(const std::string& name);
 private:
     Mix_Music* backgroundMusic = nullptr;
     std::unordered_map<std::string, Mix_Chunk*> soundEffects;

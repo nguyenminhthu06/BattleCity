@@ -23,7 +23,7 @@ void Bullet::move()
         }
     }
 
-void Bullet::render(SDL_Renderer* renderer)
+void Bullet::render(SDL_Renderer* renderer) const
     {
         if(active)
         {

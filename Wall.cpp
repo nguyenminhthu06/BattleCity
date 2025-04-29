@@ -8,7 +8,7 @@
     rect = {x,y,TILE_SIZE, TILE_SIZE};
 }
 
-void Wall::render(SDL_Renderer* renderer)
+void Wall::render(SDL_Renderer* renderer) const
 {
     if(active)
     {

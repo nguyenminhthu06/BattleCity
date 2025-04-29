@@ -3,11 +3,11 @@
 	"Game.h"
 	"Constants.h"
 
-1744349952 d:\a_teaching\ltnc\2024\demo\wall.h
+1745950189 d:\a_teaching\ltnc\2024\demo\wall.h
 	<SDL.h>
 	"Constants.h"
 
-1745287768 d:\a_teaching\ltnc\2024\demo\playertank.h
+1745959964 d:\a_teaching\ltnc\2024\demo\playertank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
@@ -21,13 +21,13 @@
 	<SDL.h>
 	<SDL_image.h>
 
-1744349774 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
+1745950189 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
 	"Wall.h"
 
-1744544641 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
+1745950189 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
 	"Bullet.h"
 
-1744352207 d:\a_teaching\ltnc\2024\demo\bullet.h
+1745950189 d:\a_teaching\ltnc\2024\demo\bullet.h
 	<SDL.h>
 	"Constants.h"
 
@@ -41,49 +41,51 @@
 	<vector>
 	<Bullet.h>
 
-1745287775 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
+1745961056 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
 	"PlayerTank.h"
 	<algorithm>
 	<iostream>
 	<SDL_image.h>
 
-1744460102 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
+1745962995 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
 	"EnemyTank.h"
 	<cstdlib>
 	<algorithm>
 	<vector>
 
-1744356043 d:\a_teaching\ltnc\2024\demo\enemytank.h
+1745961639 d:\a_teaching\ltnc\2024\demo\enemytank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
 	"Constants.h"
 	"Bullet.h"
 
-1745856247 source:d:\a_teaching\ltnc\2024\demo\game.cpp
-	<iostream>
-	<algorithm>
+1745967352 source:d:\a_teaching\ltnc\2024\demo\game.cpp
 	"Game.h"
-	<SDL_image.h>
-
-1745855706 d:\a_teaching\ltnc\2024\demo\game.h
 	<SDL.h>
 	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<iostream>
+	<algorithm>
+
+1745967352 d:\a_teaching\ltnc\2024\demo\game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
 	<vector>
 	<string>
 	"PlayerTank.h"
 	"Wall.h"
 	"EnemyTank.h"
 	"Constants.h"
-	<SDL_mixer.h>
-	<SDL_ttf.h>
-	"Audio.h"
 
-1745685626 source:d:\a_teaching\ltnc\2024\demo\audio.cpp
+1745944203 source:d:\a_teaching\ltnc\2024\demo\audio.cpp
 	"Audio.h"
 	<iostream>
 
-1745685626 d:\a_teaching\ltnc\2024\demo\audio.h
+1745943794 d:\a_teaching\ltnc\2024\demo\audio.h
 	<SDL_mixer.h>
 	<string>
 	<unordered_map>

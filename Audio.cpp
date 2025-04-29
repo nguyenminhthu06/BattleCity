@@ -1,4 +1,3 @@
-// Audio.cpp
 #include "Audio.h"
 #include <iostream>
 
@@ -9,16 +8,19 @@ Audio::Audio() {
 }
 
 Audio::~Audio() {
-    // Free all sound effects
-    for (auto& pair : soundEffects) {
-        Mix_FreeChunk(pair.second);
-    }
-    soundEffects.clear();
+    stopMusic();
+    stopAllSounds();
 
-    // Free music
     if (backgroundMusic) {
         Mix_FreeMusic(backgroundMusic);
     }
+
+    for (auto& pair : soundEffects) {
+        if (pair.second) {
+            Mix_FreeChunk(pair.second);
+        }
+    }
+    soundEffects.clear();
 
     Mix_CloseAudio();
 }
@@ -35,7 +37,6 @@ bool Audio::loadMusic(const std::string& path) {
 
 void Audio::playMusic(int loops) {
     if (backgroundMusic && !muted) {
-        Mix_VolumeMusic(musicVolume);
         Mix_PlayMusic(backgroundMusic, loops);
     }
 }
@@ -49,13 +50,11 @@ void Audio::pauseMusic() {
 }
 
 void Audio::resumeMusic() {
-    if (!muted) {
-        Mix_ResumeMusic();
-    }
+    Mix_ResumeMusic();
 }
 
 void Audio::setMusicVolume(int volume) {
-    musicVolume = volume;
+    musicVolume = (volume < 0) ? 0 : (volume > 128) ? 128 : volume;
     if (!muted) {
         Mix_VolumeMusic(musicVolume);
     }
@@ -69,6 +68,7 @@ bool Audio::loadSound(const std::string& id, const std::string& path) {
         return false;
     }
     soundEffects[id] = sound;
+    Mix_VolumeChunk(sound, sfxVolume);
     return true;
 }
 
@@ -77,7 +77,6 @@ void Audio::playSound(const std::string& id) {
 
     auto it = soundEffects.find(id);
     if (it != soundEffects.end()) {
-        Mix_VolumeChunk(it->second, sfxVolume);
         Mix_PlayChannel(-1, it->second, 0);
     }
 }
@@ -87,7 +86,7 @@ void Audio::stopAllSounds() {
 }
 
 void Audio::setSoundVolume(int volume) {
-    sfxVolume = volume;
+    sfxVolume = (volume < 0) ? 0 : (volume > 128) ? 128 : volume;
     if (!muted) {
         for (auto& pair : soundEffects) {
             Mix_VolumeChunk(pair.second, sfxVolume);
@@ -95,7 +94,7 @@ void Audio::setSoundVolume(int volume) {
     }
 }
 
-// Mute control
+// Additional methods
 void Audio::toggleMute() {
     muted = !muted;
     if (muted) {
@@ -103,10 +102,26 @@ void Audio::toggleMute() {
         Mix_Volume(-1, 0); // All channels
     } else {
         Mix_VolumeMusic(musicVolume);
-        Mix_Volume(-1, sfxVolume); // All channels
+        Mix_Volume(-1, sfxVolume);
     }
 }
 
 bool Audio::isMuted() const {
     return muted;
+}
+
+void Audio::addSound(const std::string& name, Mix_Chunk* sound) {
+    if (sound) {
+        soundEffects[name] = sound;
+        Mix_VolumeChunk(sound, sfxVolume);
+    }
+}
+
+void Audio::createDefaultSound(const std::string& name) {
+    Uint8* buffer = new Uint8[1024]; // Simple silent sound
+    Mix_Chunk* dummy = Mix_QuickLoad_WAV(buffer);
+    if (dummy) {
+        addSound(name, dummy);
+    }
+    delete[] buffer;
 }
