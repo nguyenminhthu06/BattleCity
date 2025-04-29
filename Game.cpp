@@ -12,7 +12,7 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
             std::cerr <<"SDL could not initialize! SDL_Error: "<<SDL_GetError() <<std::endl;
             running = false;
         }
-        window = SDL_CreateWindow("Battle City", SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,SCREEN_WIDTH,SCREEN_HEIGHT,SDL_WINDOW_SHOWN);
+        window = SDL_CreateWindow("Watermelon Game", SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,SCREEN_WIDTH,SCREEN_HEIGHT,SDL_WINDOW_SHOWN);
         if(!window)
         {
             std::cerr <<"Window could not be created! SDL_Error: "<<SDL_GetError() <<std::endl;
@@ -65,8 +65,31 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
         buttonHeight
     };
         state = GameState::MENU;
-        //player = PlayerTank(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE);
+    if(!loadAudioResources()) {
+        std::cerr << "Failed to load audio resources!" << std::endl;
     }
+
+    // Phát nhạc menu
+    audio.setMusicVolume(64); // 50%
+    audio.setSoundVolume(128); // 100%
+    audio.playMusic();
+
+    font = TTF_OpenFont("arial.ttf", 24); // Thay đường dẫn phù hợp
+    if (!font) {
+        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        // Có thể thử load font dự phòng
+        font = TTF_OpenFont("fonts/FreeSans.ttf", 24);
+    }
+
+    }
+SDL_Texture* Game::createButtonTexture(const std::string& text) {
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* surface = TTF_RenderText_Solid(menuFont, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
 SDL_Texture* Game::loadTexture(const std::string& path)
 {
     SDL_Texture* texture = IMG_LoadTexture(renderer, path.c_str());
@@ -76,6 +99,7 @@ SDL_Texture* Game::loadTexture(const std::string& path)
     }
     return texture;
 }
+
 void Game::generateWalls()
     {
         for(int i = 3; i< MAP_HEIGHT - 3; i+=2)
@@ -108,7 +132,9 @@ void Game::handleEvents()
                                   break;
                     case SDLK_RIGHT: player.move(5, 0, walls);
                                   break;
-                    case SDLK_SPACE: player.shoot(); break;
+                    case SDLK_SPACE: player.shoot();
+                    audio.playSound("shoot");
+                    break;
 
                 }
             }
@@ -179,6 +205,7 @@ void Game::update()
             {
                 enemy.active = false;
                 bullet.active = false;
+                audio.playSound("explosion");
                 break;
             }
         }
@@ -215,6 +242,7 @@ void Game::update()
             {
                 wall.active = false;
                 bullet.active = false;
+                audio.playSound("wall_hit");
                 break;
             }
         }
@@ -248,30 +276,67 @@ void Game::update()
         }
     }
 }
+
+void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
+    // Kiểm tra font đã được load chưa
+    if (!font) {
+        std::cerr << "Font not loaded!" << std::endl;
+        return;
+    }
+
+    // Tạo surface từ text
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+    if (!surface) {
+        std::cerr << "Failed to create text surface: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    // Tạo texture từ surface
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (!texture) {
+        SDL_FreeSurface(surface);
+        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    // Render texture
+    SDL_Rect rect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+    // Giải phóng bộ nhớ
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(surface);
+}
+
 void Game::renderMenu() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
-    // Vẽ tiêu đề game
-   // SDL_Rect titleRect = {200, 100, 400, 100};
-    //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    //SDL_RenderFillRect(renderer, &titleRect);
-
-    // Vẽ nút Play
-    if(playButtonGame.isHovered) {
-        SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
-        SDL_Rect hoverRect = {playButtonGame.rect.x - 5, playButtonGame.rect.y - 5,
-                             playButtonGame.rect.w + 10, playButtonGame.rect.h + 10};
-        SDL_RenderFillRect(renderer, &hoverRect);
+    if (menuBackground) {
+        SDL_RenderCopy(renderer, menuBackground, NULL, NULL);
     }
-    SDL_RenderCopy(renderer, menuBackgroundTexture, NULL, NULL);
 
-    // Vẽ nút Play
-    SDL_Texture* currentBtnTexture = playButtonGame.isHovered ?
-                                   playButtonGame.hoverTexture :
-                                   playButtonGame.texture;
+    // Draw title
+    renderText("I-", SCREEN_WIDTH/2 - 20, 50, {255,255,255});
+    renderText("00 HI- 20000", SCREEN_WIDTH/2 - 80, 120, {255,255,0});
 
-    SDL_RenderCopy(renderer, playButtonGame.texture, NULL, &playButtonGame.rect);
+    // Draw buttons
+    SDL_Color selectedColor = {255, 0, 0, 255};
+    SDL_Color normalColor = {255, 255, 255, 255};
+
+    // 1 PLAYER button
+    SDL_SetTextureColorMod(player1Button.texture,
+                          (selectedMenuOption == 0) ? selectedColor.r : normalColor.r,
+                          (selectedMenuOption == 0) ? selectedColor.g : normalColor.g,
+                          (selectedMenuOption == 0) ? selectedColor.b : normalColor.b);
+    SDL_RenderCopy(renderer, player1Button.texture, NULL, &player1Button.rect);
+
+    // CONSTRUCTION button
+    SDL_SetTextureColorMod(constructionButton.texture,
+                          (selectedMenuOption == 1) ? selectedColor.r : normalColor.r,
+                          (selectedMenuOption == 1) ? selectedColor.g : normalColor.g,
+                          (selectedMenuOption == 1) ? selectedColor.b : normalColor.b);
+    SDL_RenderCopy(renderer, constructionButton.texture, NULL, &constructionButton.rect);
+
     SDL_RenderPresent(renderer);
 }
 void Game::run()
@@ -281,14 +346,17 @@ void Game::run()
         switch (state)
         {
             case GameState::MENU:
+                audio.playMusic();
                 handleMenuEvents();
                 renderMenu();
                 break;
             case GameState::INSTRUCTIONS:
+                audio.playMusic();
                 handleInstructionEvents();
                 renderInstructions();
                 break;
             case GameState::PLAYING:
+                audio.stopMusic();
                 handleEvents();
                 update();
                 render();
@@ -301,6 +369,10 @@ void Game::run()
                 handleVictoryEvents();
                 renderVictory();
                 break;
+            case GameState::CONSTRUCTION:
+                handleConstructionEvents();
+                renderConstruction();
+                break;
         }
         SDL_Delay(16);
     }
@@ -308,35 +380,35 @@ void Game::run()
 
 void Game::initMenu()
 {
-    menuBackgroundTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/background1.png");
-
-    if (!menuBackgroundTexture)
-    {
-        std::cerr << "Warning: Could not load menu background. Using fallback color.\n";
-        SDL_Surface* surface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
-                                                   0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-        SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 30, 30, 50)); // Màu xanh đậm
-        menuBackgroundTexture = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
+    // Khởi tạo font
+   menuFont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Arial.ttf", 24); // Thử đường dẫn tương đối
+if (!menuFont) {
+    // Thử font dự phòng
+    menuFont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Arial.ttf", 24); // Đường dẫn tuyệt đối
+    if (!menuFont) {
+        std::cerr << "Failed to load fallback font: " << TTF_GetError() << std::endl;
     }
+}
 
-    instructionBgTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg"); // Thêm dòng này
+    // Khởi tạo nút 1 PLAYER
+    player1Button.rect = {
+        (SCREEN_WIDTH - 200)/2,
+        250,
+        200,
+        50
+    };
+    player1Button.texture = createButtonTexture("1 PLAYER");
 
-    instructionTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
-    if (!instructionTexture)
-    {
-        std::cerr << "Failed to load instruction image! Using fallback.\n";
-    }
+    // Khởi tạo nút CONSTRUCTION
+    constructionButton.rect = {
+        (SCREEN_WIDTH - 200)/2,
+        320,
+        200,
+        50
+    };
+    constructionButton.texture = createButtonTexture("CONSTRUCTION");
 
-    playButtonGame.rect = {300, 400, 200, 200};
-    playButtonGame.texture = loadTexture("C:/Users/Minh Tuan/Desktop/button.jpg");
-
-    if (!playButtonGame.texture) {
-        SDL_Surface* surface = SDL_CreateRGBSurface(0, 200, 80, 32, 0, 0, 0, 0);
-        SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0, 128, 0));
-        playButtonGame.texture = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
-    }
+    selectedMenuOption = 0;
 }
 
 void Game::renderInstructions() {
@@ -368,35 +440,78 @@ void Game::renderInstructions() {
 }
 
 void Game::handleMenuEvents() {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                running = false;
-            }
-
-            if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN) {
-                int mouseX, mouseY;
-                SDL_GetMouseState(&mouseX, &mouseY);
-
-                playButtonGame.isHovered = (mouseX >= playButtonGame.rect.x &&
-                                      mouseX <= playButtonGame.rect.x + playButtonGame.rect.w &&
-                                      mouseY >= playButtonGame.rect.y &&
-                                      mouseY <= playButtonGame.rect.y + playButtonGame.rect.h);
-
-                if (playButtonGame.isHovered && e.type == SDL_MOUSEBUTTONDOWN)
-                {
-                    state = GameState::INSTRUCTIONS;
-                }
-
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            running = false;
+        }
+        else if (e.type == SDL_KEYDOWN) {
+            switch (e.key.keysym.sym) {
+                case SDLK_UP:
+                case SDLK_DOWN:
+                    selectedMenuOption = 1 - selectedMenuOption;
+                    audio.playSound("menu_select");
+                    break;
+                case SDLK_RETURN:
+                    audio.playSound("menu_confirm");
+                    if (selectedMenuOption == 0) {
+                        state = GameState::INSTRUCTIONS;
+                    } else {
+                        state = GameState::CONSTRUCTION;
+                        // Khởi tạo chế độ Construction nếu cần
+                    }
+                    break;
             }
         }
     }
+}
+void Game::handleConstructionEvents() {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            running = false;
+        }
+        // Thêm xử lý sự kiện cho chế độ Construction
+        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) {
+            state = GameState::MENU; // Thoát về menu khi nhấn ESC
+        }
+    }
+}
+
+void Game::renderConstruction() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    // Vẽ giao diện Construction
+    renderText("CONSTRUCTION MODE", SCREEN_WIDTH/2 - 150, 50, {255, 255, 255});
+    renderText("Press ESC to return to menu", SCREEN_WIDTH/2 - 200, 100, {200, 200, 200});
+
+    SDL_RenderPresent(renderer);
+}
+bool Game::loadAudioResources() {
+    // Load nhạc nền
+    if (!audio.loadMusic("D:/A_Teaching/LTNC/2024/DEMO/opening.mp3")) {
+        return false;
+    }
+
+    // Load hiệu ứng âm thanh
+    if (!audio.loadSound("shoot", "D:/A_Teaching/LTNC/2024/DEMO/tieng_sung_ban_1_phat-www_tiengdong_com.mp3") ||
+        !audio.loadSound("explosion", "assets/sounds/explosion.wav") ||
+        !audio.loadSound("wall_hit", "assets/sounds/wall_hit.wav") ||
+        !audio.loadSound("game_over", "D:/A_Teaching/LTNC/2024/DEMO/Am_thanh_that_vong-www_tiengdong_com.mp3") ||
+        !audio.loadSound("victory", "assets/sounds/victory.wav")) {
+        return false;
+    }
+
+    return true;
+}
 
 void Game::handleInstructionEvents()
 {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) {
+        if (e.type == SDL_QUIT)
+        {
             running = false;
         }
 
@@ -420,14 +535,17 @@ void Game::handleInstructionEvents()
 
 Game::~Game()
     {
+        if (menuFont) TTF_CloseFont(menuFont);
+        if (menuBackground) SDL_DestroyTexture(menuBackground);
+        if (player1Button.texture) SDL_DestroyTexture(player1Button.texture);
+        if (constructionButton.texture) SDL_DestroyTexture(constructionButton.texture);
         if (menuBackgroundTexture) SDL_DestroyTexture(menuBackgroundTexture);
-        if (playButtonMenu.texture) SDL_DestroyTexture(playButtonMenu.texture);
         if (gameOverTexture) SDL_DestroyTexture(gameOverTexture);
         if (victoryTexture) SDL_DestroyTexture(victoryTexture);
         if (retryButton.texture) SDL_DestroyTexture(retryButton.texture);
         if (retryButton.hoverTexture) SDL_DestroyTexture(retryButton.hoverTexture);
-        if (menuButton.texture) SDL_DestroyTexture(menuButton.texture);
-        if (menuButton.hoverTexture) SDL_DestroyTexture(menuButton.hoverTexture);
+        //if (menuButton.texture) SDL_DestroyTexture(menuButton.texture);
+        //if (menuButton.hoverTexture) SDL_DestroyTexture(menuButton.hoverTexture);
         SDL_DestroyTexture(playButtonGame.texture);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -456,6 +574,7 @@ void Game::renderGameOver() {
     SDL_RenderCopy(renderer, menuButton.texture, NULL, &menuButton.rect);
 
     SDL_RenderPresent(renderer);
+    audio.playSound("game_over");
 }
 
 
@@ -477,6 +596,7 @@ void Game::renderVictory() {
 
     SDL_RenderCopy(renderer, menuButton.texture, NULL, &menuButton.rect);
     SDL_RenderPresent(renderer);
+    audio.playSound("victory");
 }
 
 

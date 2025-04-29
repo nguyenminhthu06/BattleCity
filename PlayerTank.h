@@ -11,7 +11,6 @@ public:
     SDL_Rect rect;
     std::vector<Bullet> bullets;
     PlayerTank (int startX, int startY);
-
     void move(int dx, int dy, const std::vector<Wall> &walls);
     void shoot();
     void updateBullets();

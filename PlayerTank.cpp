@@ -1,5 +1,7 @@
 #include "PlayerTank.h"
 #include <algorithm>
+#include <iostream>
+#include <SDL_image.h>
 PlayerTank::PlayerTank (int startX, int startY)
 {
     x = startX;
@@ -55,3 +57,4 @@ void PlayerTank::render(SDL_Renderer* renderer)
         bullet.render(renderer);
     }
 }
+
