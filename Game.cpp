@@ -32,9 +32,19 @@ Game::Game() : player(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE,rend
     }
 
     // Initialize SDL extensions
-    IMG_Init(IMG_INIT_PNG);
+    IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
     TTF_Init();
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+
+    wallTexture = LoadTexture(renderer,"D:/A_Teaching/LTNC/2024/DEMO/wall.png");
+    if (!wallTexture) {
+        std::cerr << "Failed to load wall texture! Error: " << IMG_GetError() << std::endl;
+        // Tạo texture fallback
+        SDL_Surface* surface = SDL_CreateRGBSurface(0, TILE_SIZE, TILE_SIZE, 32, 0, 0, 0, 0);
+        SDL_FillRect(surface, nullptr, SDL_MapRGB(surface->format, 128, 128, 128));
+        wallTexture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+    }
 
     // Load font
     font = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 35);
@@ -73,7 +83,7 @@ Game::~Game() {
     SDL_DestroyTexture(retryButton.hover);
     SDL_DestroyTexture(menuButton.normal);
     SDL_DestroyTexture(menuButton.hover);
-
+    SDL_DestroyTexture(wallTexture);
     // Free audio
     Mix_FreeMusic(bgMusic);
     Mix_FreeChunk(clickSound);
@@ -153,27 +163,27 @@ void Game::renderBoldText(const std::string& text, int x, int y, SDL_Color color
 
 void Game::initMenu() {
     // Load menu textures
-    backgroundTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/bg.jpg");
-    tankGuideTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
-    gameOverTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/loser.jpg");
-    victoryTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/winner.jpg");
-    instructionTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
+    backgroundTexture = LoadTexture(renderer,"D:/A_Teaching/LTNC/2024/DEMO/bg.jpg");
+    tankGuideTexture = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
+    gameOverTexture = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/loser.jpg");
+    victoryTexture = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/winner.jpg");
+    instructionTexture = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
 
     // Initialize buttons
-    playButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
-    playButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
+    playButton.normal = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
+    playButton.hover = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
     playButton.rect = {300, 250, 200, 80};
 
-    helpButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
-    helpButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
+    helpButton.normal = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
+    helpButton.hover = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
     helpButton.rect = {300, 350, 200, 80};
 
-    retryButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
-    retryButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
+    retryButton.normal = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
+    retryButton.hover = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
     retryButton.rect = {0, 0, 200, 80}; // Position set in renderGameOver()
 
-    menuButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
-    menuButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
+    menuButton.normal = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
+    menuButton.hover = LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
     menuButton.rect = {0, 0, 200, 80}; // Position set in render functions
 
     // Load audio
@@ -191,20 +201,33 @@ void Game::initMenu() {
     Mix_PlayMusic(bgMusic, -1); // Loop indefinitely
 }
 
-SDL_Texture* Game::loadTexture(const std::string& path) {
-    SDL_Texture* texture = IMG_LoadTexture(renderer, path.c_str());
-    if (!texture) {
-        std::cerr << "Failed to load texture: " << path << " - " << IMG_GetError() << std::endl;
+SDL_Texture* Game::LoadTexture(SDL_Renderer* renderer, const std::string& filePath) {
+    if(!renderer || filePath.empty()) return nullptr;
+
+    SDL_Texture* texture = IMG_LoadTexture(renderer, filePath.c_str());
+    if(!texture) {
+        std::cerr << "Failed to load texture: " << filePath << " - " << IMG_GetError() << std::endl;
+        return nullptr;
     }
+
+    // Debug: In thông tin texture
+    int w, h;
+    SDL_QueryTexture(texture, nullptr, nullptr, &w, &h);
+    std::cout << "Loaded texture: " << filePath << " (" << w << "x" << h << ")" << std::endl;
+
     return texture;
 }
 
 void Game::generateWalls() {
-    for(int i = 3; i < MAP_HEIGHT - 3; i += 2) {
-        for(int j = 3; j < MAP_WIDTH - 3; j += 2) {
-            walls.emplace_back(j * TILE_SIZE, i * TILE_SIZE);
-        }
+    //walls.clear(); // Xóa các tường cũ nếu có
+
+    // Tạo mẫu tường ngẫu nhiên
+   for(int i = 3; i < MAP_HEIGHT - 3; i += 2) {
+    for(int j = 2; j < MAP_WIDTH - 2; j += 2) {
+        walls.emplace_back(j * TILE_SIZE, i * TILE_SIZE, wallTexture);
     }
+}
+
 }
 
 void Game::spawnEnemies() {
@@ -347,22 +370,23 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 197,198,227, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer,252,241,234, 255);
-
-     for(int i = 1; i< MAP_HEIGHT - 1; i++)
+    for(int i = 1; i< MAP_HEIGHT - 1; i++)
         {
             for(int j = 1; j< MAP_WIDTH - 1; j++)
             {
                 SDL_Rect tile = {j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE};
                 SDL_RenderFillRect(renderer,&tile);
-                SDL_RenderFillRect(renderer, &tile);
             }
         }
-        for(size_t i=0;i<walls.size();i++)
-        for(size_t i=0;i< walls.size();i++)
+        //for(size_t i=0;i<walls.size();i++)
+        //for(size_t i=0;i< walls.size();i++)
+        //{
+        //     walls[i].render(renderer);
+        //}
+        for(auto& wall : walls)
         {
-            walls[i].render(renderer);
+            wall.render(renderer);
         }
-
         player.render(renderer);
         for(auto &enemy : enemies)
         {
@@ -483,24 +507,24 @@ void Game::handleInstructionEvents() {
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
             running = false;
+            return;
         }
 
-        if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN) {
-            int mouseX, mouseY;
-            SDL_GetMouseState(&mouseX, &mouseY);
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
 
-            menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
+        menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
+        menuButton.targetScale = menuButton.isHovered ? 1.05f : 1.0f;
 
-            if (menuButton.isHovered && e.type == SDL_MOUSEBUTTONDOWN) {
+        if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            if (menuButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                state = GameState::PLAYING;
-                spawnEnemies();
-                generateWalls();
-                resetGame();
+                state = GameState::MAIN_MENU;
             }
         }
     }
 }
+
 
 void Game::renderGameOver() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -543,8 +567,8 @@ void Game::handleGameOverEvents() {
         if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN) {
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            bool wasHoveringRetry = retryButton.isHovered;
-            bool wasHoveringMenu = menuButton.isHovered;
+            //bool wasHoveringRetry = retryButton.isHovered;
+            //bool wasHoveringMenu = menuButton.isHovered;
             retryButton.isHovered = isMouseOver(retryButton.rect, mouseX, mouseY);
             menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
 

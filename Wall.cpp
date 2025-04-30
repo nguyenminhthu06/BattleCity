@@ -1,18 +1,18 @@
-#include"Wall.h"
+#include "Wall.h"
 
- Wall::Wall(int startX, int startY)
+Wall::Wall(int startX, int startY, SDL_Texture* tex)
 {
     x = startX;
     y = startY;
     active = true;
-    rect = {x,y,TILE_SIZE, TILE_SIZE};
+    rect = { x, y, 200, 200};  // hoặc TILE_SIZE nếu bạn dùng constant
+    texture = tex;
 }
 
-void Wall::render(SDL_Renderer* renderer) const
-{
-    if(active)
-    {
-        SDL_SetRenderDrawColor(renderer, 251, 193, 147, 255);
-        SDL_RenderFillRect(renderer, &rect);
+void Wall::render(SDL_Renderer* renderer) {
+    if (active && texture) {
+        SDL_Rect destRect = {x, y, 100, 100};
+        SDL_RenderCopy(renderer, texture, nullptr, &destRect);
     }
 }
+

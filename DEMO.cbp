@@ -32,8 +32,6 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="Audio.cpp" />
-		<Unit filename="Audio.h" />
 		<Unit filename="Bullet.cpp" />
 		<Unit filename="Bullet.h" />
 		<Unit filename="Constants.h" />
@@ -46,7 +44,6 @@
 		<Unit filename="Wall.cpp" />
 		<Unit filename="Wall.h" />
 		<Unit filename="main.cpp" />
-		<Unit filename="sound.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
