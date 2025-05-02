@@ -1,64 +1,49 @@
 #include "EnemyTank.h"
 #include <cstdlib>
 #include <algorithm>
-#include <vector>
+#include <iostream>
+#include "Bullet.h"
+#include "Wall.h"
 
-EnemyTank::EnemyTank(int startX, int startY, float speed) {
+EnemyTank::EnemyTank(int startX, int startY) {
     x = startX;
     y = startY;
     rect = {x, y, TILE_SIZE, TILE_SIZE};
     dirX = 0;
     dirY = 1;
     active = true;
-
-    // Khởi tạo các giá trị tốc độ
-    moveSpeed = speed;
-    moveDelay = static_cast<int>(15 / moveSpeed); // Điều chỉnh delay dựa trên tốc độ
-    shootDelay = 3; // Thời gian delay giữa các lần bắn
-    bulletSpeed = 1.0f;; // Tốc độ đạn mặc định
-}
-
-void EnemyTank::setSpeed(float newSpeed) {
-    moveSpeed = newSpeed;
-    moveDelay = static_cast<int>(15 / moveSpeed);
-}
-
-void EnemyTank::setBulletSpeed(float newSpeed) {
-    bulletSpeed = newSpeed;
+    moveDelay = 15;
+    shootDelay = 5;
 }
 
 void EnemyTank::move(const std::vector<Wall>& walls) {
     if (--moveDelay > 0) return;
-    moveDelay = static_cast<int>(15 / moveSpeed); // Cập nhật delay dựa trên tốc độ
-
-    // Chọn hướng di chuyển ngẫu nhiên
+    moveDelay = 15;
     int r = rand() % 4;
-    int moveStep = static_cast<int>(9 * moveSpeed); // Bước di chuyển tỷ lệ với tốc độ
-
     if (r == 0) {
-        dirX = 0;
-        dirY = -moveStep;
+        this->dirX = 0;
+        this->dirY = -5;
     }
     else if (r == 1) {
-        dirX = 0;
-        dirY = moveStep;
+        this->dirX = 0;
+        this->dirY = 5;
     }
     else if (r == 2) {
-        dirX = -moveStep;
-        dirY = 0;
+        this->dirX = 5;
+        this->dirY = 0;
     }
-    else if (r == 3) {
-        dirX = moveStep;
-        dirY = 0;
+    else if (r == 1) {
+        this->dirX = -5;
+        this->dirY = 0;
     }
 
-    int newX = x + dirX;
-    int newY = y + dirY;
+    int newX = x + this->dirX;
+    int newY = y + this->dirY;
 
-    SDL_Rect newRect = {newX, newY, TILE_SIZE, TILE_SIZE};
+    SDL_Rect newRect = { newX, newY, TILE_SIZE, TILE_SIZE };
     for (const auto& wall : walls) {
         if (wall.active && SDL_HasIntersection(&newRect, &wall.rect)) {
-            return;
+            return; // Tránh va chạm với tường
         }
     }
 
@@ -73,11 +58,10 @@ void EnemyTank::move(const std::vector<Wall>& walls) {
 
 void EnemyTank::shoot() {
     if (--shootDelay > 0) return;
-    shootDelay = 3; // Reset delay bắn
+    shootDelay = 5;
 
-    // Tạo đạn với tốc độ đã được điều chỉnh
-    bullets.emplace_back(x + TILE_SIZE / 2 - 5, y + TILE_SIZE / 2 - 5,
-                        dirX * bulletSpeed, dirY * bulletSpeed);
+    bullets.push_back(Bullet(x + TILE_SIZE / 2 - 5, y + TILE_SIZE / 2 - 5,
+                         this->dirX, this->dirY));
 }
 
 void EnemyTank::updateBullets() {
@@ -89,11 +73,13 @@ void EnemyTank::updateBullets() {
 }
 
 void EnemyTank::render(SDL_Renderer* renderer) const {
-    SDL_SetRenderDrawColor(renderer, 242, 128, 118, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
     SDL_RenderFillRect(renderer, &rect);
 
-    // Vẽ đạn
-    for (auto& bullet : bullets) {
+    for (const auto& bullet : bullets)
+    {
         bullet.render(renderer);
     }
 }
+
+

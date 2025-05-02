@@ -2,30 +2,21 @@
 #include <vector>
 #include "Wall.h"
 #include <SDL.h>
+#include <SDL_image.h>
 #include "Constants.h"
 #include "Bullet.h"
-
 class EnemyTank {
 public:
     int x, y;
     int dirX, dirY;
-    SDL_Rect rect;
+    int moveDelay, shootDelay;
     bool active;
+    SDL_Rect rect;
     std::vector<Bullet> bullets;
+    EnemyTank(int startX, int startY);
 
-    // Thêm các biến tốc độ
-    float moveSpeed;
-    int moveDelay;
-    int shootDelay;
-    float bulletSpeed;
-
-    EnemyTank(int startX, int startY, float speed = 1.0f);
     void move(const std::vector<Wall>& walls);
     void shoot();
     void updateBullets();
     void render(SDL_Renderer* renderer) const;
-
-    // Thêm phương thức điều chỉnh tốc độ
-    void setSpeed(float newSpeed);
-    void setBulletSpeed(float newSpeed);
 };
