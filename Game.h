@@ -20,7 +20,7 @@ public:
     std::vector<EnemyTank> enemies;
     int enemyNumber = 3;
     bool running;
-
+    int mouseX, mouseY;
     enum class GameState {
         MAIN_MENU,
         INSTRUCTIONS,

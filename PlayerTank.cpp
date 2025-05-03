@@ -5,10 +5,10 @@
 PlayerTank::PlayerTank(int startX, int startY) {
     x = startX;
     y = startY;
-    rect = { x, y, TILE_SIZE*2, TILE_SIZE*2 };
+    rect = { x, y, TILE_SIZE*2, TILE_SIZE*2};
     dirX = 0;
     dirY = -1;
-    speed = 3.0f;
+    speed = 5.0f;
 }
 
 void PlayerTank::move(int dx, int dy, const std::vector<Wall>& walls) {

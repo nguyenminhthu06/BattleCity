@@ -38,14 +38,14 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     {
         std::cerr << "SDL_image init failed: " << IMG_GetError() << std::endl;
     }
-    if (!player.loadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/playertank1.jpg")) {
+    if (!player.loadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/playertank1.png")) {
         std::cout << "Failed to load player tank texture!" << std::endl;
     }
-     enemyTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/enemies.jpg");
+     enemyTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/enemies.png");
     if (!enemyTexture) {
         std::cout << "Failed to load enemy texture: " << SDL_GetError() << std::endl;
     }
-    wallTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/wall.jpg");
+    wallTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/wall.png");
     if (!wallTexture) {
         std::cout << "Failed to load wall texture: " << SDL_GetError() << std::endl;
     }
@@ -89,10 +89,8 @@ Game::~Game() {
     SDL_DestroyTexture(retryButton.hover);
     SDL_DestroyTexture(menuButton.normal);
     SDL_DestroyTexture(menuButton.hover);
-    if (enemyTexture) {
-        SDL_DestroyTexture(enemyTexture);
-        enemyTexture = nullptr;
-    }
+    SDL_DestroyTexture(enemyTexture);
+
 
     Mix_FreeMusic(bgMusic);
     Mix_FreeChunk(clickSound);
@@ -577,7 +575,7 @@ void Game::renderGameOver() {
 void Game::resetPlayer() {
     player = PlayerTank(((MAP_WIDTH - 1) / 2) * TILE_SIZE, (MAP_HEIGHT - 2) * TILE_SIZE);
 
-    SDL_Texture* tex = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/playertank1.jpg");  // Ưu tiên đường dẫn tương đối
+    SDL_Texture* tex = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/playertank1-removebg-preview.png");  // Ưu tiên đường dẫn tương đối
     if (!tex) {
         std::cout << "Failed to load player texture!" << std::endl;
     } else {

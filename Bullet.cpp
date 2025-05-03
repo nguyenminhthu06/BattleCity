@@ -7,7 +7,7 @@ Bullet::Bullet(int startX, int startY, int dirX, int dirY)
         dx = dirX;
         dy = dirY;
         active = true;
-        rect = {x,y,10,10};
+        rect = {x,y,12,12};
     }
 
 void Bullet::move()
@@ -27,7 +27,7 @@ void Bullet::render(SDL_Renderer* renderer) const
     {
         if(active)
         {
-            SDL_SetRenderDrawColor(renderer, 65, 58, 59, 255);
+            SDL_SetRenderDrawColor(renderer, 189,213,151, 255);
             SDL_RenderFillRect(renderer, &rect);
         }
     }

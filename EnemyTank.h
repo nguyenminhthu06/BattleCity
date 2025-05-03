@@ -16,7 +16,6 @@ public:
     SDL_Texture* texture;
     std::vector<Bullet> bullets;
     EnemyTank(int startX, int startY);
-    ~EnemyTank();
 
     void setTexture(SDL_Texture* tex);
     void setSpeed(float speed);
