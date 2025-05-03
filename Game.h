@@ -62,8 +62,8 @@ public:
     TTF_Font* boldfont;
     Button playButton;
     Button helpButton;
-    Button retryButton;    // Added
-    Button menuButton;     // Added
+    Button retryButton;
+    Button menuButton;
 
     SDL_Texture* backgroundTexture;
     SDL_Texture* tankGuideTexture;
@@ -81,19 +81,18 @@ public:
     Mix_Chunk* bulletSound;
     Mix_Chunk* gameOverSound;
     Mix_Chunk* victorySound;
-
+    Mix_Chunk* explodeSound;
 
     // Helper methods
     void initMenu();
     void generateWalls();
     void spawnEnemies();
+    void resetPlayer();
     SDL_Texture* loadTexture(const char* path);
     static SDL_Texture* LoadTexture(SDL_Renderer* renderer, const std::string& filePath);
     void renderText(const std::string& text, int x, int y, SDL_Color color);
     void renderBoldText(const std::string& text, int x, int y, SDL_Color color);
     bool isMouseOver(const SDL_Rect& rect, int x, int y);
-    void updateTankAnimation();
-    void renderTank();
 
     // State handlers
     void handleMenuEvents();

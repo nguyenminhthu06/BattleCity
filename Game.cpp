@@ -41,12 +41,14 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     if (!player.loadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/playertank1.jpg")) {
         std::cout << "Failed to load player tank texture!" << std::endl;
     }
-    enemyTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/enemies.jpg");
+     enemyTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/enemies.jpg");
     if (!enemyTexture) {
         std::cout << "Failed to load enemy texture: " << SDL_GetError() << std::endl;
-        running = false;
     }
-
+    wallTexture = IMG_LoadTexture(renderer, "D:/A_Teaching/LTNC/2024/DEMO/wall.jpg");
+    if (!wallTexture) {
+        std::cout << "Failed to load wall texture: " << SDL_GetError() << std::endl;
+    }
 
     TTF_Init();
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
@@ -77,7 +79,7 @@ Game::~Game() {
     SDL_DestroyTexture(gameOverTexture);
     SDL_DestroyTexture(victoryTexture);
     SDL_DestroyTexture(instructionTexture);
-
+    SDL_DestroyTexture(enemyTexture);
     // Free buttons textures
     SDL_DestroyTexture(playButton.normal);
     SDL_DestroyTexture(playButton.hover);
@@ -98,6 +100,7 @@ Game::~Game() {
     Mix_FreeChunk(bulletSound);
     Mix_FreeChunk(gameOverSound);
     Mix_FreeChunk(victorySound);
+    Mix_FreeChunk(explodeSound);
 
     // Close font
     TTF_CloseFont(font);
@@ -210,7 +213,8 @@ void Game::initMenu() {
     // Load audio
     bgMusic = Mix_LoadMUS("D:/A_Teaching/LTNC/2024/DEMO/opening.mp3");
     clickSound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/mouseclick.mp3");
-    hoverSound = Mix_LoadWAV("assets/audio/hover.wav");
+    hoverSound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/mouseclick.mp3");
+    explodeSound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/explore.mp3");
     bulletSound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/bum.mp3");
     gameOverSound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/loser.mp3");
     victorySound = Mix_LoadWAV("D:/A_Teaching/LTNC/2024/DEMO/winner.mp3");
@@ -236,7 +240,7 @@ SDL_Texture* Game::loadTexture(const std::string &filePath) {
 void Game::generateWalls() {
    for(int i = 3; i < MAP_HEIGHT - 3; i += 2) {
     for(int j = 3; j < MAP_WIDTH - 3; j += 2) {
-        walls.emplace_back(j * TILE_SIZE, i * TILE_SIZE);
+        walls.emplace_back(j * TILE_SIZE, i * TILE_SIZE,wallTexture);
     }
 }
 
@@ -244,24 +248,27 @@ void Game::generateWalls() {
 
 void Game::spawnEnemies() {
     enemies.clear();
-    for (int i = 0; i < enemyNumber; i++) {
+    for (int i = 0; i < enemyNumber; ++i) {
         int ex, ey;
-        bool validPosition = false;
+        bool valid = false;
 
-        while (!validPosition) {
-            ex = (rand() % (MAP_WIDTH - 2) + 1) * TILE_SIZE;
-            ey = (rand() % (MAP_HEIGHT - 2) + 1) * TILE_SIZE;
-            validPosition = true;
+        while (!valid) {
+            ex = (rand() % (MAP_WIDTH-2)+1) * TILE_SIZE;
+            ey = (rand() % (MAP_HEIGHT-2)+1) * TILE_SIZE;
+            valid = true;
 
-            // Kiểm tra không trùng với tường
             for (const auto& wall : walls) {
                 if (wall.active && wall.x == ex && wall.y == ey) {
-                    validPosition = false;
+                    valid = false;
                     break;
                 }
             }
         }
-        enemies.push_back(EnemyTank(ex,ey));
+
+        EnemyTank e(ex, ey);
+        e.setTexture(enemyTexture);
+        e.setSpeed(2.0f);
+        enemies.push_back(e);
     }
 }
 
@@ -305,6 +312,7 @@ void Game::update(float deltaTime) {
             if(enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect)) {
                 enemy.active = false;
                 bullet.active = false;
+                Mix_PlayChannel(-1, explodeSound, 0);
                 break;
             }
         }
@@ -500,7 +508,7 @@ void Game::renderInstructions() {
      if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("PLAY", 350, 460,{167,112,79, 255});
+        renderText("PLAY", 350, 480,{167,112,79, 255});
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
     // Render back button
@@ -529,7 +537,7 @@ void Game::handleInstructionEvents() {
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (menuButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                state = GameState::MAIN_MENU;
+                state = GameState::PLAYING;
             }
         }
     }
@@ -566,6 +574,18 @@ void Game::renderGameOver() {
 
     SDL_RenderPresent(renderer);
 }
+void Game::resetPlayer() {
+    player = PlayerTank(((MAP_WIDTH - 1) / 2) * TILE_SIZE, (MAP_HEIGHT - 2) * TILE_SIZE);
+
+    SDL_Texture* tex = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/playertank1.jpg");  // Ưu tiên đường dẫn tương đối
+    if (!tex) {
+        std::cout << "Failed to load player texture!" << std::endl;
+    } else {
+        std::cout << "Loaded player texture successfully." << std::endl;
+        player.setTexture(tex);
+    }
+
+}
 
 void Game::handleGameOverEvents() {
     SDL_Event e;
@@ -577,18 +597,14 @@ void Game::handleGameOverEvents() {
         if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN) {
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            //bool wasHoveringRetry = retryButton.isHovered;
-            //bool wasHoveringMenu = menuButton.isHovered;
             retryButton.isHovered = isMouseOver(retryButton.rect, mouseX, mouseY);
             menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
 
             if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (retryButton.isHovered) {
+                    resetGame();
                     Mix_PlayChannel(-1, clickSound, 0);
                     state = GameState::PLAYING;
-                    spawnEnemies();
-                    generateWalls();
-                    resetGame();
                 }
                 else if (menuButton.isHovered) {
                     resetGame();
@@ -649,15 +665,12 @@ void Game::handleVictoryEvents() {
     }
 }
 
-void Game::resetGame() {
-    // Reset player
+void Game::resetGame()
+{
     player = PlayerTank(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
-
-    // Regenerate walls
+    resetPlayer();
     walls.clear();
     generateWalls();
-
-    // Respawn enemies
     spawnEnemies();
 }
 
@@ -679,18 +692,3 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
     }
 }
 
-void Game::updateTankAnimation() {
-    // Implement your tank animation logic here
-    // This is just a placeholder
-    static float animTime = 0;
-    animTime += 0.1f;
-    // Update any animation variables here
-}
-
-void Game::renderTank() {
-    // Implement your tank rendering logic here
-    if (tankGuideTexture) {
-        SDL_Rect rect = {100, 150, 200, 200}; // Example position
-        SDL_RenderCopy(renderer, tankGuideTexture, nullptr, &rect);
-    }
-}

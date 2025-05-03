@@ -77,6 +77,14 @@ bool PlayerTank::loadTexture(SDL_Renderer* renderer, const char* path) {
     return true;
 }
 
+void PlayerTank::setTexture(SDL_Texture* tex) {
+    // Nếu đã có texture cũ, giải phóng trước khi gán
+    if (texture) {
+        SDL_DestroyTexture(texture);
+    }
+    texture = tex;
+}
+
 void PlayerTank::render(SDL_Renderer* renderer) {
     // Vẽ texture nếu có
     if (texture) {

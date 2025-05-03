@@ -3,11 +3,12 @@
 	"Game.h"
 	"Constants.h"
 
-1746076606 d:\a_teaching\ltnc\2024\demo\wall.h
+1746258216 d:\a_teaching\ltnc\2024\demo\wall.h
 	<SDL.h>
+	<SDL_image.h>
 	"Constants.h"
 
-1746195890 d:\a_teaching\ltnc\2024\demo\playertank.h
+1746259576 d:\a_teaching\ltnc\2024\demo\playertank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
@@ -22,7 +23,7 @@
 	<SDL.h>
 	<SDL_image.h>
 
-1746076606 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
+1746258600 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
 	"Wall.h"
 
 1745950189 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
@@ -42,12 +43,12 @@
 	<vector>
 	<Bullet.h>
 
-1746200050 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
+1746259576 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
 	"PlayerTank.h"
 	<iostream>
 	<algorithm>
 
-1746201934 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
+1746261626 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
 	"EnemyTank.h"
 	<cstdlib>
 	<algorithm>
@@ -55,7 +56,7 @@
 	"Bullet.h"
 	"Wall.h"
 
-1746201925 d:\a_teaching\ltnc\2024\demo\enemytank.h
+1746257201 d:\a_teaching\ltnc\2024\demo\enemytank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
@@ -63,7 +64,7 @@
 	"Constants.h"
 	"Bullet.h"
 
-1746202051 source:d:\a_teaching\ltnc\2024\demo\game.cpp
+1746261966 source:d:\a_teaching\ltnc\2024\demo\game.cpp
 	"Game.h"
 	<SDL.h>
 	<SDL_image.h>
@@ -72,7 +73,7 @@
 	<iostream>
 	<algorithm>
 
-1746199127 d:\a_teaching\ltnc\2024\demo\game.h
+1746261626 d:\a_teaching\ltnc\2024\demo\game.h
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_mixer.h>

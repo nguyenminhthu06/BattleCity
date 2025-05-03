@@ -10,11 +10,16 @@ public:
     int x, y;
     int dirX, dirY;
     int moveDelay, shootDelay;
+    float moveSpeed;
     bool active;
     SDL_Rect rect;
+    SDL_Texture* texture;
     std::vector<Bullet> bullets;
     EnemyTank(int startX, int startY);
+    ~EnemyTank();
 
+    void setTexture(SDL_Texture* tex);
+    void setSpeed(float speed);
     void move(const std::vector<Wall>& walls);
     void shoot();
     void updateBullets();

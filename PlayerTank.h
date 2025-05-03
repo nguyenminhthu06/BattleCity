@@ -18,6 +18,7 @@ public:
     PlayerTank(int startX, int startY);
     ~PlayerTank();
 
+    void setTexture(SDL_Texture* tex); // Setter texture từ Game
     void move(int dx, int dy, const std::vector<Wall>& walls);
     void shoot();
     void updateBullets();
