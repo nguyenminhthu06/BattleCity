@@ -68,8 +68,13 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     initMenu();
 
     // Set initial state
-    state = GameState::MAIN_MENU;
     running = true;
+    transitioning = false;
+    fadeIn = false;
+    fadeAlpha = 0.0f;
+    targetState = GameState::MAIN_MENU;
+    SDL_Log("Game initialization complete, state: %d, targetState: %d",
+            static_cast<int>(state), static_cast<int>(targetState));
 }
 
 Game::~Game() {
@@ -110,7 +115,6 @@ Game::~Game() {
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-
 void Game::run() {
     Uint32 lastTime = SDL_GetTicks();
     while (running) {
@@ -118,6 +122,12 @@ void Game::run() {
         float deltaTime = (currentTime - lastTime) / 1000.0f;
         lastTime = currentTime;
 
+        // Cập nhật chuyển trạng thái
+        if (transitioning) {
+            updateTransition(deltaTime);
+        }
+
+        // Xử lý sự kiện và render theo trạng thái hiện tại
         switch (state) {
             case GameState::MAIN_MENU:
                 handleMenuEvents();
@@ -141,14 +151,17 @@ void Game::run() {
                 renderVictory();
                 break;
             case GameState::CONSTRUCTION:
-                // Handle construction state
+                // Xử lý trạng thái construction
                 break;
             default:
-                SDL_Log("Unknown game state!");
+                SDL_Log("Unknown game state: %d", static_cast<int>(state));
                 break;
         }
 
-        // Cap at ~60 FPS
+        // Render hiệu ứng chuyển cảnh (nếu có)
+        renderTransition();
+
+        // Giới hạn FPS
         Uint32 frameTime = SDL_GetTicks() - currentTime;
         if (frameTime < 16) {
             SDL_Delay(16 - frameTime);
@@ -288,14 +301,15 @@ void Game::handleEvents() {
 }
 
 void Game::update(float deltaTime) {
-    // Update player bullets
+    updateTransition(deltaTime); // Handle transitions
+    if (transitioning) return;
+
     updateMusic();
     player.updateBullets();
 
-    // Check player bullets hitting enemies
-    for(auto& bullet : player.bullets) {
-        for(auto& enemy : enemies) {
-            if(enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect)) {
+    for (auto& bullet : player.bullets) {
+        for (auto& enemy : enemies) {
+            if (enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect)) {
                 enemy.active = false;
                 bullet.active = false;
                 Mix_PlayChannel(-1, explodeSound, 0);
@@ -304,23 +318,18 @@ void Game::update(float deltaTime) {
         }
     }
 
-    // Update enemies
-    for(auto& enemy : enemies) {
+    for (auto& enemy : enemies) {
         enemy.move(walls);
         enemy.updateBullets();
-
-        // Random enemy shooting
-        if(rand() % 100 < 2) {
+        if (rand() % 100 < 2) {
             enemy.shoot();
         }
     }
 
-
-    // Check enemy bullets hitting walls
-    for(auto& enemy : enemies) {
-        for(auto& bullet : enemy.bullets) {
-            for(auto& wall : walls) {
-                if(wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
+    for (auto& enemy : enemies) {
+        for (auto& bullet : enemy.bullets) {
+            for (auto& wall : walls) {
+                if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
                     wall.active = false;
                     bullet.active = false;
                     break;
@@ -329,10 +338,9 @@ void Game::update(float deltaTime) {
         }
     }
 
-    // Check player bullets hitting walls
-    for(auto& bullet : player.bullets) {
-        for(auto& wall : walls) {
-            if(wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
+    for (auto& bullet : player.bullets) {
+        for (auto& wall : walls) {
+            if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
                 wall.active = false;
                 bullet.active = false;
                 break;
@@ -340,22 +348,19 @@ void Game::update(float deltaTime) {
         }
     }
 
-    // Remove inactive enemies
     enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-        [](EnemyTank &e){ return !e.active; }), enemies.end());
+        [](EnemyTank &e) { return !e.active; }), enemies.end());
 
-    // Check victory condition
-    if(enemies.empty()) {
+    if (enemies.empty()) {
         Mix_PlayChannel(-1, victorySound, 0);
-        state = GameState::VICTORY;
+        startTransition(GameState::VICTORY);
     }
 
-    // Check player hit by enemy bullets
-    for(auto& enemy : enemies) {
-        for(auto& bullet : enemy.bullets) {
-            if(SDL_HasIntersection(&bullet.rect, &player.rect)) {
+    for (auto& enemy : enemies) {
+        for (auto& bullet : enemy.bullets) {
+            if (SDL_HasIntersection(&bullet.rect, &player.rect)) {
                 Mix_PlayChannel(-1, gameOverSound, 0);
-                state = GameState::GAME_OVER;
+                startTransition(GameState::GAME_OVER);
                 return;
             }
         }
@@ -377,6 +382,7 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 197,198,227, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer,252,241,234, 255);
+
     for(int i = 1; i< MAP_HEIGHT - 1; i++)
         {
             for(int j = 1; j< MAP_WIDTH - 1; j++)
@@ -397,6 +403,7 @@ void Game::render() {
         {
             enemy.render(renderer);
         }
+        renderTransition();
         SDL_RenderPresent(renderer);
     }
 
@@ -468,10 +475,13 @@ void Game::handleMenuEvents() {
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (playButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                state = GameState::PLAYING;
+                //state = GameState::PLAYING;
+                startTransition(GameState::PLAYING);
+
             } else if (helpButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                state = GameState::INSTRUCTIONS;
+                //state = GameState::INSTRUCTIONS;
+                startTransition(GameState::INSTRUCTIONS);
             }
         }
     }
@@ -520,7 +530,8 @@ void Game::handleInstructionEvents() {
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (menuButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                state = GameState::PLAYING;
+                //state = GameState::PLAYING;
+                startTransition(GameState::PLAYING);
             }
         }
     }
@@ -587,12 +598,14 @@ void Game::handleGameOverEvents() {
                 if (retryButton.isHovered) {
                     resetGame();
                     Mix_PlayChannel(-1, clickSound, 0);
-                    state = GameState::PLAYING;
+                    //state = GameState::PLAYING;
+                    startTransition(GameState::PLAYING);
                 }
                 else if (menuButton.isHovered) {
                     resetGame();
                     Mix_PlayChannel(-1, clickSound, 0);
-                    state = GameState::MAIN_MENU;
+                    //state = GameState::MAIN_MENU;
+                    startTransition(GameState::MAIN_MENU);
                 }
             }
         }
@@ -642,7 +655,8 @@ void Game::handleVictoryEvents() {
             if (menuButton.isHovered && e.type == SDL_MOUSEBUTTONDOWN) {
                 Mix_PlayChannel(-1, clickSound, 0);
                 resetGame();
-                state = GameState::MAIN_MENU;
+                //state = GameState::MAIN_MENU;
+                startTransition(GameState::MAIN_MENU);
             }
         }
     }
@@ -674,4 +688,63 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         SDL_FreeSurface(surface);
     }
 }
+void Game::startTransition(GameState newState) {
+    if (transitioning) {
+        std::cout << "Transition already in progress" << std::endl;
+        return;
+    }
+
+    // Kiểm tra trạng thái hợp lệ
+    if (newState < GameState::MAIN_MENU || newState > GameState::CONSTRUCTION) {
+        std::cerr << "Invalid game state requested: " << static_cast<int>(newState) << std::endl;
+        return;
+    }
+
+    targetState = newState;
+    transitioning = true;
+    fadeIn = true;
+    fadeAlpha = 0.0f;
+
+    // Debug log
+    std::cout << "Starting transition to state: " << static_cast<int>(newState) << std::endl;
+}
+
+void Game::updateTransition(float deltaTime) {
+    if (!transitioning) return;
+
+    const float fadeSpeed = 500.0f * deltaTime;
+
+    if (fadeIn) {
+        fadeAlpha += fadeSpeed;
+        if (fadeAlpha >= 255.0f) {
+            fadeAlpha = 255.0f;
+            state = targetState;  // Sửa từ nextState thành targetState
+            fadeIn = false;
+
+            // Reset game nếu chuyển sang trạng thái PLAYING
+            if (state == GameState::PLAYING) {
+                resetGame();
+            }
+        }
+    } else {
+        fadeAlpha -= fadeSpeed;
+        if (fadeAlpha <= 0.0f) {
+            fadeAlpha = 0.0f;
+            transitioning = false;
+        }
+    }
+}
+
+void Game::renderTransition() {
+    if (!transitioning && fadeAlpha <= 0.0f) return;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, static_cast<Uint8>(fadeAlpha));
+    SDL_Rect fullScreen = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+    SDL_RenderFillRect(renderer, &fullScreen);
+}
+
+
+
+
 

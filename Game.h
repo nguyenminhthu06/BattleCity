@@ -103,4 +103,18 @@ public:
     void renderInstructions();
     void renderGameOver();
     void renderVictory();
+
+    bool transitioning = false;
+    GameState targetState;
+    float fadeAlpha = 0.0f;
+    bool fadeIn = false;
+
+    // Các phương thức chuyển trạng thái
+    void startTransition(GameState newState);
+    void updateTransition(float deltaTime);
+    void renderTransition();
+
 };
+
+
+

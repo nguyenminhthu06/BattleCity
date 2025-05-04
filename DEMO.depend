@@ -48,7 +48,7 @@
 	<iostream>
 	<algorithm>
 
-1746265973 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
+1746325809 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
 	"EnemyTank.h"
 	<cstdlib>
 	<algorithm>
@@ -64,7 +64,7 @@
 	"Constants.h"
 	"Bullet.h"
 
-1746324504 source:d:\a_teaching\ltnc\2024\demo\game.cpp
+1746374825 source:d:\a_teaching\ltnc\2024\demo\game.cpp
 	"Game.h"
 	<SDL.h>
 	<SDL_image.h>
@@ -73,7 +73,7 @@
 	<iostream>
 	<algorithm>
 
-1746269702 d:\a_teaching\ltnc\2024\demo\game.h
+1746374825 d:\a_teaching\ltnc\2024\demo\game.h
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_mixer.h>
@@ -93,4 +93,17 @@
 	<SDL_mixer.h>
 	<string>
 	<unordered_map>
+
+1746370712 d:\a_teaching\ltnc\2024\demo\levelsystem.h
+	<vector>
+	<string>
+	"Wall.h"
+	"EnemyTank.h"
+
+1746370704 d:\a_teaching\ltnc\2024\demo\scoresystem.h
+	<unordered_map>
+
+1746370301 source:d:\a_teaching\ltnc\2024\demo\scoresystem.cpp
+	"ScoreSystem.h"
+	<fstream>
 
