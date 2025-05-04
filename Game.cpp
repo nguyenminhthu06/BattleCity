@@ -537,14 +537,14 @@ void Game::renderGameOver() {
     }
 
     // Position buttons
-    retryButton.rect = {490, 420, 200, 150};
+    retryButton.rect = {470, 400, 150, 150};
     menuButton.rect = {180, 380, 200, 200};
 
     if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
         renderText("MENU", 230, 390,{167,112,79, 255});
-        renderText("PLAY", 520, 390,{167,112,79, 255});
+        renderText("PLAY", 500, 390,{167,112,79, 255});
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
     // Render buttons

@@ -12,15 +12,15 @@ EnemyTank::EnemyTank(int startX, int startY) {
     dirX = 0;
     dirY = 1;
     active = true;
-    moveDelay = static_cast<int>(10 / moveSpeed);
-    shootDelay = 2;
+    moveDelay = static_cast<int>(8 / moveSpeed);
+    shootDelay = 1;
     moveSpeed=2.0f;
     texture = nullptr;
 }
 
 void EnemyTank::move(const std::vector<Wall>& walls) {
     if (--moveDelay > 0) return;
-    moveDelay = static_cast<int>(10 / moveSpeed);
+    moveDelay = static_cast<int>(8 / moveSpeed);
     int r = rand() % 4;
     int moveStep = static_cast<int>(5 * moveSpeed);
     if (r == 0) {
@@ -65,7 +65,7 @@ void EnemyTank::setSpeed(float speed) {
 
 void EnemyTank::shoot() {
     if (--shootDelay > 0) return;
-    shootDelay = 2;
+    shootDelay = 1;
 
     bullets.push_back(Bullet(x + TILE_SIZE / 2 - 5, y + TILE_SIZE / 2 - 5,
                          this->dirX, this->dirY));
