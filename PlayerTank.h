@@ -17,7 +17,7 @@ public:
 
     PlayerTank(int startX, int startY);
     ~PlayerTank();
-
+    void setPosition(int x, int y);
     void setTexture(SDL_Texture* tex);
     void move(int dx, int dy, const std::vector<Wall>& walls);
     void shoot();

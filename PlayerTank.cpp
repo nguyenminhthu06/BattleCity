@@ -10,7 +10,12 @@ PlayerTank::PlayerTank(int startX, int startY) {
     dirY = -1;
     speed = 5.0f;
 }
-
+void PlayerTank::setPosition(int x, int y) {
+        this->x = x;
+        this->y = y;
+        rect.x = x;
+        rect.y = y;
+    }
 void PlayerTank::move(int dx, int dy, const std::vector<Wall>& walls) {
     float newX = x + dx * speed;
     float newY = y + dy * speed;

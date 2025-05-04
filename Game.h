@@ -1,4 +1,3 @@
-
 #pragma once
 #include <SDL.h>
 #include <SDL_image.h>
@@ -6,6 +5,7 @@
 #include <SDL_ttf.h>
 #include <vector>
 #include <string>
+#include<map>
 #include "PlayerTank.h"
 #include "Wall.h"
 #include "EnemyTank.h"
@@ -27,6 +27,7 @@ public:
         PLAYING,
         GAME_OVER,
         VICTORY,
+        LOADING,
         CONSTRUCTION
     };
     GameState state;
@@ -64,7 +65,7 @@ public:
     Button helpButton;
     Button retryButton;
     Button menuButton;
-
+    Button nextLevelButton;
     SDL_Texture* backgroundTexture;
     SDL_Texture* tankGuideTexture;
     SDL_Texture* gameOverTexture;
@@ -114,6 +115,18 @@ public:
     void updateTransition(float deltaTime);
     void renderTransition();
 
+    int currentLevel = 1;
+    const int MAX_LEVEL = 3;
+    int score = 0;
+    std::map<int, int> highScores; // level -> high score
+
+    void loadLevel(int levelNumber);
+    void enemyKilled();
+    void loadHighScores();
+    void saveHighScores();
+    void generateDefaultLevel(int levelNumber);
+    void spawnEnemy(int levelNumber);
+    void startLevelTransition(int newLevel) ;
 };
 
 
