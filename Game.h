@@ -53,7 +53,7 @@ public:
 
     void run();
     void handleEvents();
-    void update(float deltaTime = 0.0f);  // Updated
+    void update(float deltaTime = 0.0f);
     void render();
     void resetGame();
     void updateMusic();

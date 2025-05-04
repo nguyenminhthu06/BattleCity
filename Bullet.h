@@ -11,6 +11,6 @@ public:
 
     Bullet(int startX, int startY, int dirX, int dirY);
     void move();
-    void render(SDL_Renderer* renderer) const;  // Add const
+    void render(SDL_Renderer* renderer) const;
 
 };

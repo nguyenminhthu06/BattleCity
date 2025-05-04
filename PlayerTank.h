@@ -12,13 +12,13 @@ public:
     float speed;
     SDL_Rect rect;
 
-    SDL_Texture* texture = nullptr; // texture cho player tank
+    SDL_Texture* texture = nullptr;
     std::vector<Bullet> bullets;
 
     PlayerTank(int startX, int startY);
     ~PlayerTank();
 
-    void setTexture(SDL_Texture* tex); // Setter texture từ Game
+    void setTexture(SDL_Texture* tex);
     void move(int dx, int dy, const std::vector<Wall>& walls);
     void shoot();
     void updateBullets();

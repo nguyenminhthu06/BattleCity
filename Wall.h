@@ -11,6 +11,6 @@ public:
     SDL_Texture* texture;
 
     Wall(int startX, int startY, SDL_Texture* tex);
-    void render(SDL_Renderer* renderer) const;  // Add const
+    void render(SDL_Renderer* renderer) const;
 
 };

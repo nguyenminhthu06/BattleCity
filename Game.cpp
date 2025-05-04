@@ -89,8 +89,6 @@ Game::~Game() {
     SDL_DestroyTexture(retryButton.hover);
     SDL_DestroyTexture(menuButton.normal);
     SDL_DestroyTexture(menuButton.hover);
-    SDL_DestroyTexture(enemyTexture);
-
 
     Mix_FreeMusic(bgMusic);
     Mix_FreeChunk(clickSound);
@@ -102,6 +100,7 @@ Game::~Game() {
 
     // Close font
     TTF_CloseFont(font);
+    TTF_CloseFont(boldfont);
 
     // Quit subsystems
     Mix_CloseAudio();
@@ -224,17 +223,6 @@ void Game::initMenu() {
     Mix_PlayMusic(bgMusic, -1); // Loop indefinitely
 }
 
-SDL_Texture* Game::loadTexture(const std::string &filePath) {
-    SDL_Texture* texture = nullptr;
-    texture = IMG_LoadTexture(renderer, filePath.c_str());
-
-    if (texture == nullptr) {
-        printf("Failed to load texture %s! SDL_image Error: %s\n",
-               filePath.c_str(), IMG_GetError());
-    }
-
-    return texture;
-}
 void Game::generateWalls() {
    for(int i = 3; i < MAP_HEIGHT - 3; i += 2) {
     for(int j = 3; j < MAP_WIDTH - 3; j += 2) {
@@ -481,15 +469,12 @@ void Game::handleMenuEvents() {
             if (playButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
                 state = GameState::PLAYING;
-                Mix_HaltMusic();
-            }
-            else if (helpButton.isHovered) {
+            } else if (helpButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
                 state = GameState::INSTRUCTIONS;
             }
         }
     }
-
     // Update button animations
     playButton.targetScale = playButton.isHovered ? 1.05f : 1.0f;
     helpButton.targetScale = helpButton.isHovered ? 1.05f : 1.0f;
@@ -575,7 +560,7 @@ void Game::renderGameOver() {
 void Game::resetPlayer() {
     player = PlayerTank(((MAP_WIDTH - 1) / 2) * TILE_SIZE, (MAP_HEIGHT - 2) * TILE_SIZE);
 
-    SDL_Texture* tex = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/playertank1-removebg-preview.png");  // Ưu tiên đường dẫn tương đối
+    SDL_Texture* tex = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/playertank1.png");
     if (!tex) {
         std::cout << "Failed to load player texture!" << std::endl;
     } else {
