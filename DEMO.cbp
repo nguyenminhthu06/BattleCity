@@ -41,6 +41,8 @@
 		<Unit filename="Game.h" />
 		<Unit filename="PlayerTank.cpp" />
 		<Unit filename="PlayerTank.h" />
+		<Unit filename="ScoreManager.cpp" />
+		<Unit filename="ScoreManager.h" />
 		<Unit filename="Wall.cpp" />
 		<Unit filename="Wall.h" />
 		<Unit filename="main.cpp" />
