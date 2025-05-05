@@ -20,3 +20,5 @@ void Wall::render(SDL_Renderer* renderer) const
     }
 }
 
+
+

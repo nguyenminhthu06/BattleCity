@@ -25,8 +25,7 @@ public:
         PLAYING,
         GAME_OVER,
         VICTORY,
-        GAME_COMPLETE,
-        CONSTRUCTION
+        GAME_COMPLETE
     };
 
     // Button struct
@@ -102,7 +101,8 @@ public:
     ScoreManager scoreManager;
     int score = 0;
     std::map<int, int> highScores;
-    int enemyNumber = 0;
+    int initialEnemyCount = 0;
+    int remainingEnemies = 0;
 
 
     // Input
@@ -150,5 +150,22 @@ public:
     void enemyKilled();
     void loadHighScores();
     void saveHighScores();
+    bool isMouseOver(const SDL_Rect& rect, int x, int y);
+    int comboCount = 0;
+    Uint32 lastKillTime = 0;
+    Uint32 levelStartTime;
+    Uint32 currentPlayTime;
+    bool isTimerRunning;
+    const Uint32 COMBO_TIME_WINDOW = 2000;
+    const std::map<int, float> COMBO_MULTIPLIERS = {
+        {3, 1.5f},
+        {5, 2.0f}
+    };
+    const Uint32 TIME_BONUS_PER_SECOND = 10;
+    void completeLevel();
+    void updateHighScores();
 
 };
+
+
+

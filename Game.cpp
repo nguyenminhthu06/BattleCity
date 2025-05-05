@@ -55,15 +55,17 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
     // Load font
     font = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 35);
-    smallfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 20);
+    smallfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Cabin-VariableFont_wdth,wght.ttf",20);
     boldfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro Bold.ttf", 35);
-    if (!font || !smallfont || !boldfont)
-    {
-        std::cerr << "Failed to load fonts! Error: " << TTF_GetError() << std::endl;
+    if (!font || !smallfont) {
+        std::cerr << "Failed to load font! Using fallback." << std::endl;
     }
+    if (!boldfont) {
+        std::cerr << "Failed to load bold font! Using fallback." << std::endl;
+    }
+
     initMenu();
-    scoreManager.loadHighScores(highScores);
-    // Set initial game state
+
     running = true;
     transitioning = false;
     fadeIn = false;
@@ -71,22 +73,11 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     targetState = GameState::MAIN_MENU;
     currentLevel = 1;
     score = 0;
-
-    loadLevel(currentLevel);
+    loadHighScores();
+    loadLevel(1);
     SDL_Log("Game initialization complete, state: %d, targetState: %d",
             static_cast<int>(state), static_cast<int>(targetState));
 
-}
-void Game::enemyKilled() {
-    scoreManager.enemyKilled(score);
-}
-
-void Game::loadHighScores() {
-    scoreManager.loadHighScores(highScores);
-}
-
-void Game::saveHighScores() {
-    scoreManager.saveHighScores(highScores);
 }
 
 Game::~Game() {
@@ -137,7 +128,7 @@ void Game::run() {
         lastTime = currentTime;
 
         if (static_cast<int>(state) < static_cast<int>(GameState::MAIN_MENU) ||
-            static_cast<int>(state) > static_cast<int>(GameState::CONSTRUCTION)) {
+            static_cast<int>(state) > static_cast<int>(GameState::GAME_COMPLETE)) {
             SDL_Log("LỖI: State không hợp lệ: %d, đặt lại thành MAIN_MENU", static_cast<int>(state));
             state = GameState::MAIN_MENU;
         }
@@ -173,9 +164,6 @@ void Game::run() {
                 handleGameCompleteEvents();
                 renderGameComplete();
             break;
-            case GameState::CONSTRUCTION:
-                // Xử lý trạng thái construction
-                break;
             default:
                 SDL_Log("Unknown game state: %d", static_cast<int>(state));
                 running = false;
@@ -202,17 +190,17 @@ void Game::renderBoldText(const std::string& text, int x, int y, SDL_Color color
     renderText(text, x, y, color);
 }
 
-SDL_Texture* Game::loadTexture(const char* path)
-{
+SDL_Texture* Game::loadTexture(const char* path) {
     SDL_Surface* surface = IMG_Load(path);
     if (!surface) {
-        std::cout << "Failed to load surface: " << IMG_GetError() << std::endl;
+        std::cerr << "Failed to load surface from " << path << ": " << IMG_GetError() << std::endl;
         return nullptr;
     }
+
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     if (!texture) {
-        std::cout << "Failed to create texture: " << SDL_GetError() << std::endl;
+        std::cerr << "Failed to create texture from " << path << ": " << SDL_GetError() << std::endl;
     }
     return texture;
 }
@@ -278,11 +266,12 @@ void Game::startLevelTransition(int newLevel) {
 }
 void Game::spawnEnemies() {
     enemies.clear();
-    for (int i = 0; i < enemyNumber; ++i) {
+    for (int i = 0; i < initialEnemyCount; ++i) {
         int ex, ey;
         bool valid = false;
+        int maxAttempts = 100; // Giới hạn số lần thử
 
-        while (!valid) {
+        while (!valid && maxAttempts > 0) {
             ex = (rand() % (MAP_WIDTH-2)+1) * TILE_SIZE;
             ey = (rand() % (MAP_HEIGHT-2)+1) * TILE_SIZE;
             valid = true;
@@ -293,12 +282,17 @@ void Game::spawnEnemies() {
                     break;
                 }
             }
+            maxAttempts--;
         }
 
-        EnemyTank e(ex, ey);
-        e.setTexture(enemyTexture);
-        e.setSpeed(2.0f);
-        enemies.push_back(e);
+        if (valid) {
+            EnemyTank e(ex, ey);
+            e.setTexture(enemyTexture);
+            e.setSpeed(2.0f);
+            enemies.push_back(e);
+        } else {
+            std::cerr << "Could not find valid position for enemy " << i << std::endl;
+        }
     }
 }
 
@@ -324,7 +318,9 @@ void Game::handleEvents() {
                     break;
                 case SDLK_SPACE:
                     player.shoot();
-                    Mix_PlayChannel(-1, bulletSound, 0);
+                    if (bulletSound) {
+                        Mix_PlayChannel(-1, bulletSound, 0);
+                    }
                     break;
             }
         }
@@ -332,52 +328,36 @@ void Game::handleEvents() {
 }
 
 void Game::update(float deltaTime) {
+    if (isTimerRunning && state == GameState::PLAYING) {
+        currentPlayTime = SDL_GetTicks() - levelStartTime;
+    }
+    updateTransition(deltaTime);
     if (transitioning || state != GameState::PLAYING) return;
-
     updateMusic();
-    player.update(deltaTime);
     player.updateBullets();
 
-    // Handle bullet collisions
     for (auto& bullet : player.bullets) {
-        if (!bullet.active) continue;
-
-        // Check wall collisions
-        for (auto& wall : walls) {
-            if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
-                wall.active = false;
-                bullet.active = false;
-                Mix_PlayChannel(-1, explodeSound, 0);
-                break;
-            }
-        }
-
-        // Check enemy collisions
         for (auto& enemy : enemies) {
             if (enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect)) {
                 enemy.active = false;
                 bullet.active = false;
                 Mix_PlayChannel(-1, explodeSound, 0);
-                enemyKilled(); // Sử dụng hàm đã được cập nhật
+                enemyKilled();
                 break;
             }
         }
     }
 
-    // Update enemies
     for (auto& enemy : enemies) {
-        enemy.update(deltaTime, walls);
+        enemy.move(walls);
         enemy.updateBullets();
-
         if (rand() % 100 < 2) {
             enemy.shoot();
         }
+    }
 
-        // Check enemy bullets
+    for (auto& enemy : enemies) {
         for (auto& bullet : enemy.bullets) {
-            if (!bullet.active) continue;
-
-            // Check wall collisions
             for (auto& wall : walls) {
                 if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
                     wall.active = false;
@@ -385,8 +365,23 @@ void Game::update(float deltaTime) {
                     break;
                 }
             }
+        }
+    }
+    for (auto& bullet : player.bullets) {
+        for (auto& wall : walls) {
+            if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
+                wall.active = false;
+                bullet.active = false;
+                break;
+            }
+        }
+    }
 
-            // Check player collision
+    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+        [](EnemyTank &e) { return !e.active; }), enemies.end());
+
+    for (auto& enemy : enemies) {
+        for (auto& bullet : enemy.bullets) {
             if (SDL_HasIntersection(&bullet.rect, &player.rect)) {
                 Mix_PlayChannel(-1, gameOverSound, 0);
                 startTransition(GameState::GAME_OVER);
@@ -394,27 +389,16 @@ void Game::update(float deltaTime) {
             }
         }
     }
-
-    // Remove inactive enemies
-    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-        [](EnemyTank &e) { return !e.active; }), enemies.end());
-
-    // Check win condition
-    if (enemies.empty() && !transitioning) {
-        Mix_PlayChannel(-1, victorySound, 0);
-        scoreManager.updateHighScore(currentLevel, score, highScores);
-        startTransition(GameState::VICTORY);
-    }
 }
 
 void Game::updateMusic() {
     if ((state == GameState::MAIN_MENU || state == GameState::INSTRUCTIONS)) {
         if (!Mix_PlayingMusic()) {
-            Mix_PlayMusic(bgMusic, -1); // Phát nhạc nếu chưa chạy
+            Mix_PlayMusic(bgMusic, -1);
         }
     } else {
         if (Mix_PlayingMusic()) {
-            Mix_HaltMusic(); // Dừng nhạc nếu không phải main_menu hay instruction
+            Mix_HaltMusic();
         }
     }
 }
@@ -445,13 +429,29 @@ void Game::render() {
             enemy.render(renderer);
         }
 
-        renderText("Level: " + std::to_string(currentLevel), 6, 9, {45,87,67,255},smallfont);
-        renderText("Score: " + std::to_string(score), 6, 39, {45,87,67,255},smallfont);
-        renderText("High Score: " + std::to_string(highScores[currentLevel]), 6, 69, {45,87,67,255},smallfont);
+        renderText(std::string("Level: ") + std::to_string(currentLevel), 6, 9, {45, 87, 67, 255}, smallfont);
+        renderText(std::string("Score: ") + std::to_string(score), 6, 39, {45, 87, 67, 255}, smallfont);
+        renderText(std::string("High Score: ") + std::to_string(highScores[currentLevel]), 6, 69, {45, 87, 67, 255}, smallfont);
 
+        if (comboCount > 1 && (SDL_GetTicks() - lastKillTime) <= COMBO_TIME_WINDOW) {
+            renderText(std::string("COMBO x") + std::to_string(comboCount), 650, 10, {244, 127, 135 ,255},smallfont);
+        }
+
+        if (state == GameState::PLAYING) {
+            Uint32 seconds = currentPlayTime / 1000;
+            Uint32 minutes = seconds / 60;
+            seconds %= 60;
+            std::string timeText = std::string("TIME: ") +
+                               (minutes < 10 ? "0" : "") +
+                               std::to_string(minutes) +
+                               ":" +
+                               (seconds < 10 ? "0" : "") +
+                               std::to_string(seconds);
+            renderText(timeText, 6, 99, {45, 87, 67, 255}, smallfont);
+        }
         renderTransition();
         SDL_RenderPresent(renderer);
-    }
+}
 
 
 void Game::renderMenu() {
@@ -476,12 +476,6 @@ void Game::renderMenu() {
     }
     SDL_RenderPresent(renderer);
 }
-bool isMouseOver(SDL_Rect rect,int mouseX, int mouseY)
-{
-    return mouseX >= rect.x && mouseX <= rect.x + rect.w &&
-           mouseY >= rect.y && mouseY <= rect.y + rect.h;
-}
-
 void Game::handleMenuEvents() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
@@ -528,7 +522,7 @@ void Game::renderInstructions() {
      if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("PLAY", 350, 480,{167,112,79, 255}, font);
+        renderText("BACK", 350, 480,{167,112,79, 255}, font);
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
     menuButton.rect = {300, 460, 200, 200};
@@ -556,7 +550,7 @@ void Game::handleInstructionEvents() {
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (menuButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                startTransition(GameState::PLAYING);
+                startTransition(GameState::MAIN_MENU);
             }
         }
     }
@@ -636,36 +630,58 @@ void Game::handleGameOverEvents() {
 }
 
 void Game::renderVictory() {
+    std::cout << "Rendering Victory screen - currentLevel: " << currentLevel << ", MAX_LEVEL: " << MAX_LEVEL << std::endl;
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
+
     if (victoryTexture) {
         SDL_RenderCopy(renderer, victoryTexture, nullptr, nullptr);
     }
-    if (font && boldfont)
-    {
+
+    if (font && boldfont) {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("Level Complete!",230, 220, {167,112,79, 255},font);
-        renderText("Score: " + std::to_string(score),230, 270,{167,112,79, 255},font);
-        renderText("High Score: " + std::to_string(highScores[currentLevel]), 230, 320, {167,112,79, 255},font);
-        renderText("Menu",200, 420, {167,112,79, 255},font);
-        renderText("Next Level",440, 420,{167,112,79, 255},font);
+
+        // Hiển thị thông tin level
+        renderText("Level Complete!", 230, 220, {167, 112, 79, 255}, font);
+        renderText(std::string("Score: ") + std::to_string(score), 230, 270, {167, 112, 79, 255}, font);
+        renderText(std::string("High Score: ") + std::to_string(highScores[currentLevel]), 230, 320, {167, 112, 79, 255}, font);
+
+        // Hiển thị thời gian
+        Uint32 seconds = currentPlayTime / 1000;
+        Uint32 minutes = seconds / 60;
+        seconds %= 60;
+        std::string timeText = std::string("TIME: ") +
+                             (minutes < 10 ? "0" : "") +
+                             std::to_string(minutes) +
+                             ":" +
+                             (seconds < 10 ? "0" : "") +
+                             std::to_string(seconds);
+        renderText(timeText, 230, 370, {167, 112, 79, 255}, font);
+
+        // LUÔN hiển thị cả 2 nút
+        renderText("Menu", 200, 420, {167, 112, 79, 255}, font);
+        renderText("Next Level", 440, 420, {167, 112, 79, 255}, font);
+
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
+
+    // Đặt vị trí và render các nút
     menuButton.rect = {130, 410, 250, 200};
     nextLevelButton.rect = {420, 430, 200, 150};
+
     SDL_RenderCopy(renderer,
-                  menuButton.isHovered ? menuButton.hover : menuButton.normal,
-                  nullptr, &menuButton.rect);
-    SDL_RenderCopy(renderer, nextLevelButton.normal, nullptr, &nextLevelButton.rect);
+                 menuButton.isHovered ? menuButton.hover : menuButton.normal,
+                 nullptr, &menuButton.rect);
+
+    SDL_RenderCopy(renderer,
+                 nextLevelButton.isHovered ? nextLevelButton.hover : nextLevelButton.normal,
+                 nullptr, &nextLevelButton.rect);
+
     SDL_RenderPresent(renderer);
 }
 
 void Game::handleVictoryEvents() {
-    static Uint32 victoryStartTime = SDL_GetTicks();
-    if (SDL_GetTicks() - victoryStartTime < 2000) {
-        return;
-    }
-
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
@@ -676,6 +692,7 @@ void Game::handleVictoryEvents() {
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
 
+        // Luôn kiểm tra cả 2 nút
         menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
         nextLevelButton.isHovered = isMouseOver(nextLevelButton.rect, mouseX, mouseY);
 
@@ -686,16 +703,15 @@ void Game::handleVictoryEvents() {
             }
             else if (nextLevelButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                int nextLevel = currentLevel + 1;
 
-                if (nextLevel > MAX_LEVEL) {
-                    state = GameState::GAME_COMPLETE;
-                    currentLevel = 1;
-                } else {
-                    currentLevel = nextLevel;
+                if (currentLevel < MAX_LEVEL) {
+                    currentLevel++;
                     resetGame();
                     loadLevel(currentLevel);
                     startTransition(GameState::PLAYING);
+                } else {
+                    // Nếu là level cuối, chuyển sang màn hình hoàn thành game
+                    startTransition(GameState::GAME_COMPLETE);
                 }
             }
         }
@@ -722,14 +738,17 @@ void Game::renderGameComplete() {
 
     SDL_RenderPresent(renderer);
 }
-void Game::resetGame()
-{
+void Game::resetGame() {
     player = PlayerTank(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
     resetPlayer();
     walls.clear();
     enemies.clear();
     player.bullets.clear();
+    isTimerRunning = false;
+    currentPlayTime = 0;
     score = 0;
+    comboCount = 0;
+    lastKillTime = 0;
 }
 void Game::handleGameCompleteEvents() {
     SDL_Event e;
@@ -750,6 +769,10 @@ void Game::handleGameCompleteEvents() {
             }
         }
     }
+}
+bool Game::isMouseOver(const SDL_Rect& rect, int x, int y) {
+    return (x >= rect.x && x <= rect.x + rect.w &&
+            y >= rect.y && y <= rect.y + rect.h);
 }
 
 void Game::renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font) {
@@ -785,7 +808,8 @@ void Game::startTransition(GameState newState) {
         std::cout << "Transition already in progress" << std::endl;
         return;
     }
-    if (newState < GameState::MAIN_MENU || newState > GameState::CONSTRUCTION) {
+    if (newState < GameState::MAIN_MENU || newState > GameState::GAME_COMPLETE) {
+
         std::cerr << "Invalid game state requested: " << static_cast<int>(newState) << std::endl;
         return;
     }
@@ -831,75 +855,137 @@ void Game::renderTransition() {
 }
 
 void Game::loadLevel(int levelNumber) {
+    // Kiểm tra hợp lệ levelNumber
+    if (levelNumber < 1 || levelNumber > MAX_LEVEL) {
+        SDL_Log("Invalid level number: %d (Valid range: 1-%d)", levelNumber, MAX_LEVEL);
+        if (levelNumber > MAX_LEVEL) {
+            startTransition(GameState::GAME_COMPLETE);
+            return;
+        }
+        levelNumber = 1; // Fallback về level 1 nếu không hợp lệ
+    }
+
+    // Reset game state
+    currentLevel = levelNumber;
     walls.clear();
     enemies.clear();
     player.bullets.clear();
+    comboCount = 0;
+    lastKillTime = 0;
+    score = 0;
+    isTimerRunning = true;
+    levelStartTime = SDL_GetTicks();
 
+    // Load level data
     std::string path = "D:/A_Teaching/LTNC/2024/DEMO/level" + std::to_string(levelNumber) + ".txt";
     std::ifstream file(path);
 
     if (!file.is_open()) {
-        std::cerr << "Cannot open level file: " << path << " - Using default level\n";
+        std::cerr << "Cannot open level file: " << path << " - Generating default level\n";
         generateDefaultLevel(levelNumber);
+        SDL_Log("Generated default level %d", currentLevel);
         return;
     }
 
+    // Parse level file
     std::string line;
     int y = 0;
     while (std::getline(file, line)) {
         for (int x = 0; x < line.size() && x < MAP_WIDTH; x++) {
             char c = line[x];
             switch (c) {
-                case '#': // Wall
-                    walls.emplace_back(x * TILE_SIZE, y * TILE_SIZE, wallTexture);
+                case '#':
+                    if (wallTexture) {
+                        walls.emplace_back(x * TILE_SIZE, y * TILE_SIZE, wallTexture);
+                    }
                     break;
-                case 'E': // Enemy
-                {
-                    EnemyTank enemy(x * TILE_SIZE, y * TILE_SIZE);
-                    enemy.setTexture(enemyTexture);
-                    enemy.setSpeed(1.0f + (levelNumber * 0.5f));
-                    enemies.push_back(enemy);
+                case 'E':
+                    if (enemyTexture) {
+                        EnemyTank enemy(x * TILE_SIZE, y * TILE_SIZE);
+                        enemy.setTexture(enemyTexture);
+                        enemy.setSpeed(1.0f + (levelNumber * 0.5f));
+                        enemies.push_back(enemy);
+                    }
                     break;
-                }
-                case 'P': // Player
+                case 'P':
                     player.setPosition(x * TILE_SIZE, y * TILE_SIZE);
                     break;
-                case '.': // Empty space
+                case '.':
                     break;
                 default:
-                    std::cerr << "Unknown character in level file: '" << c << "'\n";
+                    SDL_Log("Unknown character '%c' at (%d,%d)", c, x, y);
             }
         }
-        y++;
-        if (y >= MAP_HEIGHT) break;
+        if (++y >= MAP_HEIGHT) break;
     }
     file.close();
-    score = 0;
+
+    // Cập nhật trạng thái enemy
+    initialEnemyCount = enemies.size();
+    remainingEnemies = initialEnemyCount;
+
+    SDL_Log("Level %d loaded: %d walls, %d enemies",
+           currentLevel, walls.size(), enemies.size());
 }
 
 void Game::generateDefaultLevel(int levelNumber) {
     walls.clear();
     enemies.clear();
-
-    // Create walls with variation based on level
-    int wallSpacing = 2 + (levelNumber % 3); // Vary spacing by level
+    int wallSpacing = 2 + (levelNumber % 3);
     for (int i = 3; i < MAP_HEIGHT - 3; i += wallSpacing) {
         for (int j = 3; j < MAP_WIDTH - 3; j += wallSpacing) {
-            if (rand() % 2 == 0) { // Randomly skip some walls
+            if (rand() % 2 == 0) {
                 walls.emplace_back(j * TILE_SIZE, i * TILE_SIZE, wallTexture);
             }
         }
     }
-
-    // Spawn enemies based on level difficulty
-    int enemyCount = 3 + levelNumber * 2; // More enemies in higher levels
+    int enemyCount = 3 + levelNumber * 2;
     for (int i = 0; i < enemyCount; ++i) {
         spawnEnemy(levelNumber);
     }
-
-    // Set player position
     player.setPosition(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
     std::cout << "Generated default level " << levelNumber << " with " << walls.size() << " walls and " << enemies.size() << " enemies\n";
+}
+void Game::enemyKilled() {
+    Uint32 currentTime = SDL_GetTicks();
+    if (currentTime - lastKillTime > COMBO_TIME_WINDOW) {
+        comboCount = 0;
+    }
+
+    comboCount++;
+    lastKillTime = currentTime;
+    float multiplier = 1.0f;
+    for (const auto& [kills, bonus] : COMBO_MULTIPLIERS) {
+        if (comboCount >= kills) {
+            multiplier = bonus;
+        }
+    }
+    int basePoints = 100;
+    score += static_cast<int>(basePoints * multiplier);
+    remainingEnemies--;
+    if (remainingEnemies <= 0) {
+        Uint32 levelTime = (SDL_GetTicks() - levelStartTime) / 1000;
+        Uint32 targetTime = 60 + (currentLevel * 30);
+        if (levelTime < targetTime) {
+            score += (targetTime - levelTime) * TIME_BONUS_PER_SECOND;
+        }
+        updateHighScores();
+        startTransition(GameState::VICTORY);
+    }
+}
+void Game::updateHighScores() {
+    if (score > highScores[currentLevel]) {
+        highScores[currentLevel] = score;
+        saveHighScores();
+    }
+}
+
+void Game::loadHighScores() {
+    scoreManager.loadHighScores(highScores);
+}
+
+void Game::saveHighScores() {
+    scoreManager.saveHighScores(highScores);
 }
 
 void Game::spawnEnemy(int levelNumber) {
@@ -924,8 +1010,19 @@ void Game::spawnEnemy(int levelNumber) {
 
     EnemyTank e(ex, ey);
     e.setTexture(enemyTexture);
-    e.setSpeed(1.0f + (levelNumber * 0.5f)); // Faster enemies in higher levels
+    e.setSpeed(1.0f + (levelNumber * 0.5f));
     enemies.push_back(e);
+}
+void Game::completeLevel() {
+    isTimerRunning = false;
+    Uint32 levelTime = (SDL_GetTicks() - levelStartTime) / 1000;
+    Uint32 targetTime = 120;
+    if (levelTime < targetTime) {
+        int timeBonus = (targetTime - levelTime) * TIME_BONUS_PER_SECOND;
+        score += timeBonus;
+    }
+    updateHighScores();
+    startTransition(GameState::VICTORY);
 }
 
 

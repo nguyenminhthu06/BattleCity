@@ -31,3 +31,6 @@ void Bullet::render(SDL_Renderer* renderer) const
             SDL_RenderFillRect(renderer, &rect);
         }
     }
+
+
+

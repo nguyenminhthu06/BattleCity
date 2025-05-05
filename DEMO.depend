@@ -1,14 +1,14 @@
 # depslib dependency file v1.0
-1745138584 source:d:\a_teaching\ltnc\2024\demo\main.cpp
+1746428522 source:d:\a_teaching\ltnc\2024\demo\main.cpp
 	"Game.h"
 	"Constants.h"
 
-1746269702 d:\a_teaching\ltnc\2024\demo\wall.h
+1746428522 d:\a_teaching\ltnc\2024\demo\wall.h
 	<SDL.h>
 	<SDL_image.h>
 	"Constants.h"
 
-1746415457 d:\a_teaching\ltnc\2024\demo\playertank.h
+1746428522 d:\a_teaching\ltnc\2024\demo\playertank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
@@ -16,20 +16,20 @@
 	"Constants.h"
 	"Bullet.h"
 
-1744349952 d:\a_teaching\ltnc\2024\demo\constants.h
+1746428522 d:\a_teaching\ltnc\2024\demo\constants.h
 
 1742259200 source:d:\a_teaching\ltnc\2024\demo\demo1.cpp
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
 
-1746258600 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
+1746428522 source:d:\a_teaching\ltnc\2024\demo\wall.cpp
 	"Wall.h"
 
-1746266165 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
+1746428522 source:d:\a_teaching\ltnc\2024\demo\bullet.cpp
 	"Bullet.h"
 
-1746269644 d:\a_teaching\ltnc\2024\demo\bullet.h
+1746428522 d:\a_teaching\ltnc\2024\demo\bullet.h
 	<SDL.h>
 	"Constants.h"
 
@@ -43,12 +43,12 @@
 	<vector>
 	<Bullet.h>
 
-1746415457 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
+1746428522 source:d:\a_teaching\ltnc\2024\demo\playertank.cpp
 	"PlayerTank.h"
 	<iostream>
 	<algorithm>
 
-1746415520 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
+1746428522 source:d:\a_teaching\ltnc\2024\demo\enemytank.cpp
 	"EnemyTank.h"
 	<cstdlib>
 	<algorithm>
@@ -56,7 +56,7 @@
 	"Bullet.h"
 	"Wall.h"
 
-1746416107 d:\a_teaching\ltnc\2024\demo\enemytank.h
+1746428522 d:\a_teaching\ltnc\2024\demo\enemytank.h
 	<vector>
 	"Wall.h"
 	<SDL.h>
@@ -64,7 +64,7 @@
 	"Constants.h"
 	"Bullet.h"
 
-1746416092 source:d:\a_teaching\ltnc\2024\demo\game.cpp
+1746435376 source:d:\a_teaching\ltnc\2024\demo\game.cpp
 	"Game.h"
 	<SDL.h>
 	<SDL_image.h>
@@ -74,7 +74,7 @@
 	<algorithm>
 	<fstream>
 
-1746415390 d:\a_teaching\ltnc\2024\demo\game.h
+1746435449 d:\a_teaching\ltnc\2024\demo\game.h
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_mixer.h>
@@ -110,10 +110,99 @@
 	"ScoreSystem.h"
 	<fstream>
 
-1746413868 d:\a_teaching\ltnc\2024\demo\scoremanager.h
+1746429020 d:\a_teaching\ltnc\2024\demo\scoremanager.h
 	<map>
+	<chrono>
 
-1746413868 source:d:\a_teaching\ltnc\2024\demo\scoremanager.cpp
+1746429020 source:d:\a_teaching\ltnc\2024\demo\scoremanager.cpp
 	"ScoreManager.h"
 	<fstream>
+	<chrono>
+
+1746418029 d:\a_teaching\ltnc\2024\demo\levelmanager.h
+	<vector>
+	<string>
+	"PlayerTank.h"
+	"EnemyTank.h"
+	"Wall.h"
+	"Constants.h"
+	"Renderer.h"
+
+1746419592 d:\a_teaching\ltnc\2024\demo\renderer.h
+	<SDL.h>
+	<SDL_ttf.h>
+	<string>
+	<vector>
+	<map>
+
+1746423588 d:\a_teaching\ltnc\2024\demo\menu.h
+	<SDL.h>
+	"Renderer.h"
+
+1746418029 source:d:\a_teaching\ltnc\2024\demo\levelmanager.cpp
+	"LevelManager.h"
+	<fstream>
+	<iostream>
+
+1746423588 source:d:\a_teaching\ltnc\2024\demo\menu.cpp
+	"Menu.h"
+
+1746427651 d:\a_teaching\ltnc\2024\demo\gamebase.h
+	<SDL.h>
+	<vector>
+	<map>
+	"PlayerTank.h"
+	"EnemyTank.h"
+	"Wall.h"
+	"Constants.h"
+
+1746427410 d:\a_teaching\ltnc\2024\demo\gameaudio.h
+	<SDL_mixer.h>
+	"GameBase.h"
+
+1746427409 d:\a_teaching\ltnc\2024\demo\gamerender.h
+	<SDL.h>
+	<SDL_ttf.h>
+	<string>
+	<vector>
+	<map>
+	"PlayerTank.h"
+	"EnemyTank.h"
+	"Wall.h"
+	"Button.h"
+	"GameBase.h"
+
+1746427502 d:\a_teaching\ltnc\2024\demo\button.h
+	<SDL.h>
+
+1746427409 d:\a_teaching\ltnc\2024\demo\gamelevel.h
+	<vector>
+	"PlayerTank.h"
+	"EnemyTank.h"
+	"Wall.h"
+	"GameRender.h"
+
+1746427409 source:d:\a_teaching\ltnc\2024\demo\gameaudio.cpp
+	"GameAudio.h"
+
+1746427410 source:d:\a_teaching\ltnc\2024\demo\gamelevel.cpp
+	"GameLevel.h"
+	<fstream>
+	<iostream>
+
+1746427502 source:d:\a_teaching\ltnc\2024\demo\button.cpp
+	"Button.h"
+
+1746428162 source:d:\a_teaching\ltnc\2024\demo\gamebase.cpp
+	"GameBase.h"
+	<SDL.h>
+	<SDL_image.h>
+	<iostream>
+	<algorithm>
+	<fstream>
+
+1746428162 source:d:\a_teaching\ltnc\2024\demo\gamerender.cpp
+	"GameRender.h"
+	<SDL_image.h>
+	<iostream>
 
