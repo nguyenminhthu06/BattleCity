@@ -55,8 +55,9 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
     // Load font
     font = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 35);
+    smallfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 20);
     boldfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro Bold.ttf", 35);
-    if (!font) {
+    if (!font || !smallfont) {
         std::cerr << "Failed to load font! Using fallback." << std::endl;
     }
     if (!boldfont) {
@@ -100,6 +101,7 @@ Game::~Game() {
     SDL_DestroyTexture(retryButton.hover);
     SDL_DestroyTexture(menuButton.normal);
     SDL_DestroyTexture(menuButton.hover);
+    SDL_DestroyTexture(gameCompleteTexture);
 
     Mix_FreeMusic(bgMusic);
     Mix_FreeChunk(clickSound);
@@ -111,6 +113,7 @@ Game::~Game() {
 
     // Close font
     TTF_CloseFont(font);
+    TTF_CloseFont(smallfont);
     TTF_CloseFont(boldfont);
 
     // Quit subsystems
@@ -162,6 +165,10 @@ void Game::run() {
                 handleVictoryEvents();
                 renderVictory();
                 break;
+            case GameState::GAME_COMPLETE:
+                handleGameCompleteEvents();
+                renderGameComplete();
+            break;
             case GameState::CONSTRUCTION:
                 // Xử lý trạng thái construction
                 break;
@@ -170,11 +177,7 @@ void Game::run() {
                 running = false;
                 break;
         }
-
-        // Render hiệu ứng chuyển cảnh (nếu có)
         renderTransition();
-
-        // Giới hạn FPS
         Uint32 frameTime = SDL_GetTicks() - currentTime;
         if (frameTime < 16) {
             SDL_Delay(16 - frameTime);
@@ -215,8 +218,9 @@ void Game::initMenu() {
     backgroundTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/bg.jpg");
     tankGuideTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
     gameOverTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/loser.jpg");
-    victoryTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/winner.jpg");
+    victoryTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/winnerlevel.jpg");
     instructionTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/Guide.jpg");
+    gameCompleteTexture = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/winner.jpg");
 
     // Initialize buttons
     playButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
@@ -235,8 +239,8 @@ void Game::initMenu() {
     menuButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
     menuButton.rect = {0, 0, 200, 80}; // Position set in render functions
 
-    nextLevelButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
-    nextLevelButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button.jpg");
+    nextLevelButton.normal = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
+    nextLevelButton.hover = loadTexture("D:/A_Teaching/LTNC/2024/DEMO/button1.jpg");
     nextLevelButton.rect = {300, 300, 200, 80};
     // Load audio
     bgMusic = Mix_LoadMUS("D:/A_Teaching/LTNC/2024/DEMO/opening.mp3");
@@ -444,51 +448,38 @@ void Game::render() {
         {
             enemy.render(renderer);
         }
-
-        SDL_Color white = {255, 255, 255, 255};
-        renderText("Level: " + std::to_string(currentLevel), 10, 10, white);
-        renderText("Score: " + std::to_string(score), 10, 40, white);
-        renderText("High Score: " + std::to_string(highScores[currentLevel]), 10, 70, white);
+        if(smallfont && boldfont){
+            TTF_SetFontStyle(font, TTF_STYLE_BOLD);
+            renderText("Level: " + std::to_string(currentLevel), 6, 9, {45,87,67,255},smallfont);
+            renderText("Score: " + std::to_string(score), 6, 39, {45,87,67,255},smallfont);
+            renderText("High Score: " + std::to_string(highScores[currentLevel]), 6, 69, {45,87,67,255},smallfont);
+            TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+        }
         renderTransition();
         SDL_RenderPresent(renderer);
     }
 
 
 void Game::renderMenu() {
-    // 1. Xóa màn hình
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
     if (backgroundTexture) {
         SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
     }
-
-    // 4. Đặt vị trí TỪNG NÚT theo cách dễ hiểu nhất
-    // -----------------------------------------------
-    // Nút Play - đặt tại x=300, y=300 (có thể thay đổi dễ dàng)
-    playButton.rect = {150, 250, 200, 150}; // x, y, width, height
+    playButton.rect = {150, 250, 200, 150};
     playButton.update();
-
-    // Nút Help - đặt dưới nút Play cách 100px
-    helpButton.rect = {150, 350, 190, 100}; // x giống Play, y = y của Play + 100
+    helpButton.rect = {150, 350, 190, 100};
     helpButton.update();
-    // -----------------------------------------------
-
-    // 5. Vẽ các nút
     SDL_RenderCopy(renderer, playButton.normal, nullptr, &playButton.rect);
     SDL_RenderCopy(renderer, helpButton.normal, nullptr, &helpButton.rect);
 
     if (font && boldfont) {
-        // Chữ "PLAYER 1" bên phải nút Play
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("PLAY", 300, 310,{167,112,79, 255});
-
-        // Chữ "CONSTRUCTION" bên phải nút Help
-        renderText("CONSTRUCTION",300, 380,{167,112,79, 255});
+        renderText("PLAY", 300, 310,{167,112,79, 255},font);
+        renderText("CONSTRUCTION",300, 380,{167,112,79, 255},font);
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
-
-    // 7. Hiển thị
     SDL_RenderPresent(renderer);
 }
 
@@ -500,38 +491,31 @@ void Game::handleMenuEvents() {
             return;
         }
 
-        // Get mouse state
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
 
-        // Check hover states
         bool wasHoveringPlay = playButton.isHovered;
         bool wasHoveringHelp = helpButton.isHovered;
 
         playButton.isHovered = isMouseOver(playButton.rect, mouseX, mouseY);
         helpButton.isHovered = isMouseOver(helpButton.rect, mouseX, mouseY);
 
-        // Play hover sound if state changed
         if ((playButton.isHovered && !wasHoveringPlay) ||
             (helpButton.isHovered && !wasHoveringHelp)) {
             Mix_PlayChannel(-1, hoverSound, 0);
         }
 
-        // Handle clicks
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (playButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                //state = GameState::PLAYING;
                 startTransition(GameState::PLAYING);
 
             } else if (helpButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                //state = GameState::INSTRUCTIONS;
                 startTransition(GameState::INSTRUCTIONS);
             }
         }
     }
-    // Update button animations
     playButton.targetScale = playButton.isHovered ? 1.05f : 1.0f;
     helpButton.targetScale = helpButton.isHovered ? 1.05f : 1.0f;
 }
@@ -539,19 +523,16 @@ void Game::handleMenuEvents() {
 void Game::renderInstructions() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
-    // Render instruction background
     if (instructionTexture) {
         SDL_RenderCopy(renderer, instructionTexture, nullptr, nullptr);
     }
      if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("PLAY", 350, 480,{167,112,79, 255});
+        renderText("PLAY", 350, 480,{167,112,79, 255}, font);
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
-    // Render back button
-    menuButton.rect = {300, 450, 200, 200};
+    menuButton.rect = {300, 460, 200, 200};
     SDL_RenderCopy(renderer,
                   menuButton.isHovered ? menuButton.hover : menuButton.normal,
                   nullptr, &menuButton.rect);
@@ -576,7 +557,6 @@ void Game::handleInstructionEvents() {
         if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             if (menuButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
-                //state = GameState::PLAYING;
                 startTransition(GameState::PLAYING);
             }
         }
@@ -588,23 +568,21 @@ void Game::renderGameOver() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    // Render game over background
-    if (gameOverTexture) {
+    if (gameOverTexture)
+    {
         SDL_RenderCopy(renderer, gameOverTexture, nullptr, nullptr);
     }
 
-    // Position buttons
     retryButton.rect = {470, 400, 150, 150};
     menuButton.rect = {180, 380, 200, 200};
 
     if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        renderText("MENU", 230, 390,{167,112,79, 255});
-        renderText("PLAY", 500, 390,{167,112,79, 255});
+        renderText("MENU", 230, 390,{167,112,79, 255},font);
+        renderText("PLAY", 500, 390,{167,112,79, 255},font);
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
-    // Render buttons
     SDL_RenderCopy(renderer,
                   retryButton.isHovered ? retryButton.hover : retryButton.normal,
                   nullptr, &retryButton.rect);
@@ -641,13 +619,13 @@ void Game::handleGameOverEvents() {
             if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (retryButton.isHovered) {
                     resetGame();
-                    loadLevel(currentLevel); // Tải lại level hiện tại
+                    loadLevel(currentLevel);
                     Mix_PlayChannel(-1, clickSound, 0);
                     startTransition(GameState::PLAYING);
                 }
                 else if (menuButton.isHovered) {
                     resetGame();
-                    loadLevel(1); // Tải level 1 khi quay lại menu
+                    loadLevel(1);
                     Mix_PlayChannel(-1, clickSound, 0);
                     startTransition(GameState::MAIN_MENU);
                 }
@@ -661,27 +639,21 @@ void Game::handleGameOverEvents() {
 void Game::renderVictory() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
-    // Render victory background
     if (victoryTexture) {
         SDL_RenderCopy(renderer, victoryTexture, nullptr, nullptr);
     }
     if (font && boldfont)
     {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-        //renderText("MENU", 350, 400,{167,112,79, 255});
-        renderText("Level Complete!",300, 200, {167,112,79, 255});
-        renderText("Score: " + std::to_string(score),300, 250,{167,112,79, 255});
-        renderText("High Score: " + std::to_string(highScores[currentLevel]), 300, 300, {167,112,79, 255});
-        renderText("Menu",280, 420, {167,112,79, 255});
-        renderText("Next Level",480, 420,{167,112,79, 255});
+        renderText("Level Complete!",230, 220, {167,112,79, 255},font);
+        renderText("Score: " + std::to_string(score),230, 270,{167,112,79, 255},font);
+        renderText("High Score: " + std::to_string(highScores[currentLevel]), 230, 320, {167,112,79, 255},font);
+        renderText("Menu",200, 420, {167,112,79, 255},font);
+        renderText("Next Level",440, 420,{167,112,79, 255},font);
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
-    // Position menu button
-    menuButton.rect = {280, 410, 250, 200};
-    nextLevelButton.rect = {400, 410, 250, 200};
-
-    // Render button
+    menuButton.rect = {130, 410, 250, 200};
+    nextLevelButton.rect = {420, 430, 200, 150};
     SDL_RenderCopy(renderer,
                   menuButton.isHovered ? menuButton.hover : menuButton.normal,
                   nullptr, &menuButton.rect);
@@ -690,6 +662,11 @@ void Game::renderVictory() {
 }
 
 void Game::handleVictoryEvents() {
+    static Uint32 victoryStartTime = SDL_GetTicks();
+    if (SDL_GetTicks() - victoryStartTime < 2000) {
+        return;
+    }
+
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
@@ -711,18 +688,41 @@ void Game::handleVictoryEvents() {
             else if (nextLevelButton.isHovered) {
                 Mix_PlayChannel(-1, clickSound, 0);
                 int nextLevel = currentLevel + 1;
+
                 if (nextLevel > MAX_LEVEL) {
-                    nextLevel = 1; // Quay lại level 1 nếu đã hoàn thành tất cả
+                    state = GameState::GAME_COMPLETE; // Thêm trạng thái mới
+                    currentLevel = 1;
+                } else {
+                    currentLevel = nextLevel;
+                    resetGame();
+                    loadLevel(currentLevel);
+                    startTransition(GameState::PLAYING);
                 }
-                currentLevel = nextLevel;
-                resetGame();
-                loadLevel(currentLevel);
-                startTransition(GameState::PLAYING);
             }
         }
     }
 }
+void Game::renderGameComplete() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
 
+    if (gameCompleteTexture) {
+         SDL_RenderCopy(renderer, gameCompleteTexture, nullptr, nullptr);
+    }
+    if (font && boldfont)
+    {
+        TTF_SetFontStyle(font, TTF_STYLE_BOLD);
+        renderText("MENU", 350, 400,{167,112,79, 255},font);
+        TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+    }
+    menuButton.rect = {280, 410, 250, 200};
+    SDL_RenderCopy(renderer,
+                  menuButton.isHovered ? menuButton.hover : menuButton.normal,
+                  nullptr, &menuButton.rect);
+
+
+    SDL_RenderPresent(renderer);
+}
 void Game::resetGame()
 {
     player = PlayerTank(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
@@ -732,13 +732,34 @@ void Game::resetGame()
     player.bullets.clear();
     score = 0;
 }
+void Game::handleGameCompleteEvents() {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            running = false;
+            return;
+        }
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+        menuButton.rect = {SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT - 150, 200, 80};
+        menuButton.isHovered = isMouseOver(menuButton.rect, mouseX, mouseY);
 
+        if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            if (menuButton.isHovered) {
+                Mix_PlayChannel(-1, clickSound, 0);
+                startTransition(GameState::MAIN_MENU);
+            }
+        }
+    }
+}
 bool Game::isMouseOver(const SDL_Rect& rect, int x, int y) {
     return (x >= rect.x && x <= rect.x + rect.w &&
             y >= rect.y && y <= rect.y + rect.h);
 }
 
-void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
+void Game::renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font) {
+    if (!font) font = smallfont;
+
     SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
     if (surface) {
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -750,13 +771,12 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         SDL_FreeSurface(surface);
     }
 }
+
 void Game::startTransition(GameState newState) {
     if (transitioning) {
         std::cout << "Transition already in progress" << std::endl;
         return;
     }
-
-    // Kiểm tra trạng thái hợp lệ
     if (newState < GameState::MAIN_MENU || newState > GameState::CONSTRUCTION) {
         std::cerr << "Invalid game state requested: " << static_cast<int>(newState) << std::endl;
         return;
@@ -766,9 +786,6 @@ void Game::startTransition(GameState newState) {
     transitioning = true;
     fadeIn = true;
     fadeAlpha = 0.0f;
-
-    // Debug log
-    std::cout << "Starting transition to state: " << static_cast<int>(newState) << std::endl;
 }
 
 void Game::updateTransition(float deltaTime) {
@@ -782,7 +799,7 @@ void Game::updateTransition(float deltaTime) {
             fadeIn = false;
             if (state == GameState::PLAYING) {
                 resetGame();
-                loadLevel(currentLevel); // Tải level hiện tại
+                loadLevel(currentLevel);
             }
             std::cout << "Transition complete. New state: " << static_cast<int>(state) << std::endl;
         }
@@ -809,8 +826,6 @@ void Game::loadLevel(int levelNumber) {
     walls.clear();
     enemies.clear();
     player.bullets.clear();
-
-    // Reset player position
     player.setPosition(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
 
     std::string path = "D:/A_Teaching/LTNC/2024/DEMO/level" + std::to_string(levelNumber) + ".txt";
@@ -826,7 +841,6 @@ void Game::loadLevel(int levelNumber) {
     std::string line;
     int y = 0;
     while (std::getline(file, line)) {
-        std::cout << "Line " << y << ": " << line << std::endl;  // Debug
         for (int x = 0; x < line.size() && x < MAP_WIDTH; x++) {
             char c = line[x];
             switch (c) {
@@ -853,20 +867,7 @@ void Game::loadLevel(int levelNumber) {
         if (y >= MAP_HEIGHT) break;
     }
     file.close();
-
-    // Debug info
-    std::cout << "Loaded level " << levelNumber << " with:\n"
-              << "- Walls: " << walls.size() << "\n"
-              << "- Enemies: " << enemies.size() << "\n"
-              << "- Player position: (" << player.x << "," << player.y << ")\n";
-
-    if (enemies.empty()) {
-        int enemyCount = 3 + levelNumber * 2;
-        for (int i = 0; i < enemyCount; ++i) {
-            spawnEnemy(levelNumber);
-        }
-    }
-    score = 0; // Reset score for new level
+    score = 0;
 
 }
 

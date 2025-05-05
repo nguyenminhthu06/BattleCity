@@ -27,7 +27,7 @@ public:
         PLAYING,
         GAME_OVER,
         VICTORY,
-        LOADING,
+        GAME_COMPLETE,
         CONSTRUCTION
     };
     GameState state;
@@ -60,6 +60,7 @@ public:
     void updateMusic();
     // Game objects
     TTF_Font* font;
+    TTF_Font* smallfont;
     TTF_Font* boldfont;
     Button playButton;
     Button helpButton;
@@ -70,6 +71,7 @@ public:
     SDL_Texture* tankGuideTexture;
     SDL_Texture* gameOverTexture;
     SDL_Texture* victoryTexture;
+    SDL_Texture* gameCompleteTexture;
     SDL_Texture* instructionTexture;
     SDL_Texture* wallTexture;
     SDL_Texture* enemyTexture;
@@ -91,7 +93,7 @@ public:
     void resetPlayer();
     SDL_Texture* loadTexture(const char* path);
     static SDL_Texture* LoadTexture(SDL_Renderer* renderer, const std::string& filePath);
-    void renderText(const std::string& text, int x, int y, SDL_Color color);
+    void renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font = nullptr);
     void renderBoldText(const std::string& text, int x, int y, SDL_Color color);
     bool isMouseOver(const SDL_Rect& rect, int x, int y);
 
@@ -104,6 +106,8 @@ public:
     void renderInstructions();
     void renderGameOver();
     void renderVictory();
+    void handleGameCompleteEvents();
+    void renderGameComplete();
 
     bool transitioning = false;
     GameState targetState;
