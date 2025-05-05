@@ -24,7 +24,7 @@ public:
     void updateBullets();
     bool loadTexture(SDL_Renderer* renderer, const char* path);
     void render(SDL_Renderer* renderer);
-
+    void update(float deltaTime);
     void setSpeed(float newSpeed);
 
 };

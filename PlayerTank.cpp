@@ -111,4 +111,8 @@ void PlayerTank::setSpeed(float newSpeed) {
 }
 
 
+void PlayerTank::update(float deltaTime) {
+    updateBullets();
+    // Bạn có thể thêm animation hoặc logic khác tại đây nếu cần
+}
 

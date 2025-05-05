@@ -12,7 +12,7 @@ EnemyTank::EnemyTank(int startX, int startY) {
     dirX = 0;
     dirY = 1;
     active = true;
-    moveDelay = static_cast<int>(8 / moveSpeed);
+    moveDelay = static_cast<int>(10 / moveSpeed);
     shootDelay = 1;
     moveSpeed=2.0f;
     texture = nullptr;
@@ -20,9 +20,9 @@ EnemyTank::EnemyTank(int startX, int startY) {
 
 void EnemyTank::move(const std::vector<Wall>& walls) {
     if (--moveDelay > 0) return;
-    moveDelay = static_cast<int>(8 / moveSpeed);
+    moveDelay = static_cast<int>(10 / moveSpeed);
     int r = rand() % 4;
-    int moveStep = static_cast<int>(5 * moveSpeed);
+    int moveStep = static_cast<int>(4 * moveSpeed);
     if (r == 0) {
         this->dirX = 0;
         this->dirY = -moveStep;
@@ -60,7 +60,7 @@ void EnemyTank::move(const std::vector<Wall>& walls) {
 }
 void EnemyTank::setSpeed(float speed) {
     moveSpeed = speed;
-    moveDelay = static_cast<int>(8 / moveSpeed);
+    moveDelay = static_cast<int>(10 / moveSpeed);
 }
 
 void EnemyTank::shoot() {
@@ -93,4 +93,15 @@ void EnemyTank::render(SDL_Renderer* renderer) const {
 void EnemyTank::setTexture(SDL_Texture* tex) {
     texture = tex;
 }
+void EnemyTank::update(float deltaTime, const std::vector<Wall>& walls) {
+    moveDelay--;
+    shootDelay--;
+    moveDelay = std::max(0, moveDelay);
+    shootDelay = std::max(0, shootDelay);
+
+    move(walls);
+    updateBullets();
+}
+
+
 

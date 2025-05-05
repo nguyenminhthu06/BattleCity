@@ -57,19 +57,13 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     font = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 35);
     smallfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro.ttf", 20);
     boldfont = TTF_OpenFont("D:/A_Teaching/LTNC/2024/DEMO/Core Narae Pro W01 Pro Bold.ttf", 35);
-    if (!font || !smallfont) {
-        std::cerr << "Failed to load font! Using fallback." << std::endl;
+    if (!font || !smallfont || !boldfont)
+    {
+        std::cerr << "Failed to load fonts! Error: " << TTF_GetError() << std::endl;
     }
-    if (!boldfont) {
-        std::cerr << "Failed to load bold font! Using fallback." << std::endl;
-    }
-
-    // Initialize game objects
-    //generateWalls();
-    //spawnEnemies();
     initMenu();
-
-    // Set initial state
+    scoreManager.loadHighScores(highScores);
+    // Set initial game state
     running = true;
     transitioning = false;
     fadeIn = false;
@@ -77,11 +71,22 @@ Game::Game():player(((MAP_WIDTH-1)/2)*TILE_SIZE,(MAP_HEIGHT-2)*TILE_SIZE)
     targetState = GameState::MAIN_MENU;
     currentLevel = 1;
     score = 0;
-    loadHighScores();
-    loadLevel(1);
+
+    loadLevel(currentLevel);
     SDL_Log("Game initialization complete, state: %d, targetState: %d",
             static_cast<int>(state), static_cast<int>(targetState));
 
+}
+void Game::enemyKilled() {
+    scoreManager.enemyKilled(score);
+}
+
+void Game::loadHighScores() {
+    scoreManager.loadHighScores(highScores);
+}
+
+void Game::saveHighScores() {
+    scoreManager.saveHighScores(highScores);
 }
 
 Game::~Game() {
@@ -327,36 +332,52 @@ void Game::handleEvents() {
 }
 
 void Game::update(float deltaTime) {
-    updateTransition(deltaTime);
     if (transitioning || state != GameState::PLAYING) return;
+
     updateMusic();
+    player.update(deltaTime);
     player.updateBullets();
 
-    // Xử lý va chạm đạn và kẻ thù
+    // Handle bullet collisions
     for (auto& bullet : player.bullets) {
+        if (!bullet.active) continue;
+
+        // Check wall collisions
+        for (auto& wall : walls) {
+            if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
+                wall.active = false;
+                bullet.active = false;
+                Mix_PlayChannel(-1, explodeSound, 0);
+                break;
+            }
+        }
+
+        // Check enemy collisions
         for (auto& enemy : enemies) {
             if (enemy.active && SDL_HasIntersection(&bullet.rect, &enemy.rect)) {
                 enemy.active = false;
                 bullet.active = false;
                 Mix_PlayChannel(-1, explodeSound, 0);
-                enemyKilled();
+                enemyKilled(); // Sử dụng hàm đã được cập nhật
                 break;
             }
         }
     }
 
-    // Cập nhật kẻ thù
+    // Update enemies
     for (auto& enemy : enemies) {
-        enemy.move(walls);
+        enemy.update(deltaTime, walls);
         enemy.updateBullets();
+
         if (rand() % 100 < 2) {
             enemy.shoot();
         }
-    }
 
-    // Xử lý va chạm đạn và tường
-    for (auto& enemy : enemies) {
+        // Check enemy bullets
         for (auto& bullet : enemy.bullets) {
+            if (!bullet.active) continue;
+
+            // Check wall collisions
             for (auto& wall : walls) {
                 if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
                     wall.active = false;
@@ -364,25 +385,8 @@ void Game::update(float deltaTime) {
                     break;
                 }
             }
-        }
-    }
-    for (auto& bullet : player.bullets) {
-        for (auto& wall : walls) {
-            if (wall.active && SDL_HasIntersection(&bullet.rect, &wall.rect)) {
-                wall.active = false;
-                bullet.active = false;
-                break;
-            }
-        }
-    }
 
-    // Xóa kẻ thù không hoạt động
-    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-        [](EnemyTank &e) { return !e.active; }), enemies.end());
-
-    // Kiểm tra va chạm đạn kẻ thù với người chơi
-    for (auto& enemy : enemies) {
-        for (auto& bullet : enemy.bullets) {
+            // Check player collision
             if (SDL_HasIntersection(&bullet.rect, &player.rect)) {
                 Mix_PlayChannel(-1, gameOverSound, 0);
                 startTransition(GameState::GAME_OVER);
@@ -391,21 +395,14 @@ void Game::update(float deltaTime) {
         }
     }
 
-    // Kiểm tra điều kiện chiến thắng
-    bool allEnemiesDead = true;
-    for (const auto& enemy : enemies) {
-        if (enemy.active) {
-            allEnemiesDead = false;
-            break;
-        }
-    }
-    if (allEnemiesDead && !transitioning) {
-        std::cout << "Victory condition met! Transitioning to VICTORY state." << std::endl;
+    // Remove inactive enemies
+    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+        [](EnemyTank &e) { return !e.active; }), enemies.end());
+
+    // Check win condition
+    if (enemies.empty() && !transitioning) {
         Mix_PlayChannel(-1, victorySound, 0);
-        if (score > highScores[currentLevel]) {
-            highScores[currentLevel] = score;
-            saveHighScores();
-        }
+        scoreManager.updateHighScore(currentLevel, score, highScores);
         startTransition(GameState::VICTORY);
     }
 }
@@ -478,6 +475,11 @@ void Game::renderMenu() {
         TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     }
     SDL_RenderPresent(renderer);
+}
+bool isMouseOver(SDL_Rect rect,int mouseX, int mouseY)
+{
+    return mouseX >= rect.x && mouseX <= rect.x + rect.w &&
+           mouseY >= rect.y && mouseY <= rect.y + rect.h;
 }
 
 void Game::handleMenuEvents() {
@@ -749,10 +751,6 @@ void Game::handleGameCompleteEvents() {
         }
     }
 }
-bool Game::isMouseOver(const SDL_Rect& rect, int x, int y) {
-    return (x >= rect.x && x <= rect.x + rect.w &&
-            y >= rect.y && y <= rect.y + rect.h);
-}
 
 void Game::renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font) {
     if (!font) {
@@ -903,29 +901,7 @@ void Game::generateDefaultLevel(int levelNumber) {
     player.setPosition(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
     std::cout << "Generated default level " << levelNumber << " with " << walls.size() << " walls and " << enemies.size() << " enemies\n";
 }
-void Game::enemyKilled() {
-    score += 100;
-    // Có thể thêm hiệu ứng âm thanh/hình ảnh tại đây
-}
 
-void Game::loadHighScores() {
-    std::ifstream in("highscores.txt");
-    if (!in) return;
-    int level, hs;
-    while (in >> level >> hs) {
-        if (level >= 1 && level <= MAX_LEVEL) {
-            highScores[level] = hs;
-        }
-    }
-    in.close();
-}
-
-void Game::saveHighScores() {
-    std::ofstream out("highscores.txt");
-    for (const auto& [level, hs] : highScores) {
-        out << level << " " << hs << "\n";
-    }
-}
 void Game::spawnEnemy(int levelNumber) {
     int ex, ey;
     bool valid = false;

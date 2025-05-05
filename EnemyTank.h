@@ -23,4 +23,6 @@ public:
     void shoot();
     void updateBullets();
     void render(SDL_Renderer* renderer) const;
+    void update(float deltaTime, const std::vector<Wall>& walls);
+
 };

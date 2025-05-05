@@ -5,22 +5,20 @@
 #include <SDL_ttf.h>
 #include <vector>
 #include <string>
-#include<map>
+#include <map>
 #include "PlayerTank.h"
 #include "Wall.h"
 #include "EnemyTank.h"
 #include "Constants.h"
+#include "ScoreManager.h"
 
 class Game {
 public:
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    PlayerTank player;
-    std::vector<Wall> walls;
-    std::vector<EnemyTank> enemies;
-    int enemyNumber = 3;
-    bool running;
-    int mouseX, mouseY;
+    Game();
+    ~Game();
+
+    void run();
+    // Game state enum
     enum class GameState {
         MAIN_MENU,
         INSTRUCTIONS,
@@ -30,8 +28,8 @@ public:
         GAME_COMPLETE,
         CONSTRUCTION
     };
-    GameState state;
 
+    // Button struct
     struct Button {
         SDL_Rect rect;
         SDL_Texture* normal;
@@ -44,94 +42,113 @@ public:
             const float speed = 0.1f;
             scale += (targetScale - scale) * speed;
         }
-        bool contains(int x, int y) const {
-        return (x >= rect.x && x <= rect.x + rect.w &&
-                y >= rect.y && y <= rect.y + rect.h);
-    }
-    };
-    Game();
-    ~Game();
 
-    void run();
-    void handleEvents();
-    void update(float deltaTime = 0.0f);
-    void render();
-    void resetGame();
-    void updateMusic();
+        bool contains(int x, int y) const {
+            return (x >= rect.x && x <= rect.x + rect.w &&
+                    y >= rect.y && y <= rect.y + rect.h);
+        }
+    };
+
+    // SDL components
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
     // Game objects
-    TTF_Font* font;
-    TTF_Font* smallfont;
-    TTF_Font* boldfont;
+    PlayerTank player;
+    std::vector<Wall> walls;
+    std::vector<EnemyTank> enemies;
+
+    // UI elements
+    TTF_Font* font = nullptr;
+    TTF_Font* smallfont = nullptr;
+    TTF_Font* boldfont = nullptr;
+
     Button playButton;
     Button helpButton;
     Button retryButton;
     Button menuButton;
     Button nextLevelButton;
-    SDL_Texture* backgroundTexture;
-    SDL_Texture* tankGuideTexture;
-    SDL_Texture* gameOverTexture;
-    SDL_Texture* victoryTexture;
-    SDL_Texture* gameCompleteTexture;
-    SDL_Texture* instructionTexture;
-    SDL_Texture* wallTexture;
-    SDL_Texture* enemyTexture;
-    SDL_Texture* loadTexture(const std::string &filePath);
+
+    // Textures
+    SDL_Texture* backgroundTexture = nullptr;
+    SDL_Texture* tankGuideTexture = nullptr;
+    SDL_Texture* gameOverTexture = nullptr;
+    SDL_Texture* victoryTexture = nullptr;
+    SDL_Texture* gameCompleteTexture = nullptr;
+    SDL_Texture* instructionTexture = nullptr;
+    SDL_Texture* wallTexture = nullptr;
+    SDL_Texture* enemyTexture = nullptr;
 
     // Audio
-    Mix_Music* bgMusic;
-    Mix_Chunk* clickSound;
-    Mix_Chunk* hoverSound;
-    Mix_Chunk* bulletSound;
-    Mix_Chunk* gameOverSound;
-    Mix_Chunk* victorySound;
-    Mix_Chunk* explodeSound;
+    Mix_Music* bgMusic = nullptr;
+    Mix_Chunk* clickSound = nullptr;
+    Mix_Chunk* hoverSound = nullptr;
+    Mix_Chunk* bulletSound = nullptr;
+    Mix_Chunk* gameOverSound = nullptr;
+    Mix_Chunk* victorySound = nullptr;
+    Mix_Chunk* explodeSound = nullptr;
+
+    // Game state
+    bool running = true;
+    GameState state = GameState::MAIN_MENU;
+    GameState targetState = GameState::MAIN_MENU;
+    bool transitioning = false;
+    float fadeAlpha = 0.0f;
+    bool fadeIn = false;
+
+    // Game progression
+    int currentLevel = 1;
+    const int MAX_LEVEL = 3;
+    ScoreManager scoreManager;
+    int score = 0;
+    std::map<int, int> highScores;
+    int enemyNumber = 0;
+
+
+    // Input
+    int mouseX = 0;
+    int mouseY = 0;
+
+    // Core game methods
+    void handleEvents();
+    void update(float deltaTime = 0.0f);
+    void render();
+    void resetGame();
+    void resetPlayer();
+    void updateMusic();
 
     // Helper methods
     void initMenu();
     void generateWalls();
     void spawnEnemies();
-    void resetPlayer();
-    SDL_Texture* loadTexture(const char* path);
+    SDL_Texture*loadTexture(const char* path);
     static SDL_Texture* LoadTexture(SDL_Renderer* renderer, const std::string& filePath);
     void renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font = nullptr);
     void renderBoldText(const std::string& text, int x, int y, SDL_Color color);
-    bool isMouseOver(const SDL_Rect& rect, int x, int y);
 
     // State handlers
     void handleMenuEvents();
     void handleInstructionEvents();
     void handleGameOverEvents();
     void handleVictoryEvents();
+    void handleGameCompleteEvents();
     void renderMenu();
     void renderInstructions();
     void renderGameOver();
     void renderVictory();
-    void handleGameCompleteEvents();
     void renderGameComplete();
 
-    bool transitioning = false;
-    GameState targetState;
-    float fadeAlpha = 0.0f;
-    bool fadeIn = false;
-
-    // Các phương thức chuyển trạng thái
+    // Transition methods
     void startTransition(GameState newState);
     void updateTransition(float deltaTime);
     void renderTransition();
-
-    int currentLevel = 1;
-    const int MAX_LEVEL = 3;
-    int score = 0;
-    std::map<int, int> highScores; // level -> high score
-
+    // Level management
     void loadLevel(int levelNumber);
+    void generateDefaultLevel(int levelNumber);
+    void spawnEnemy(int levelNumber);
+    void startLevelTransition(int newLevel);
     void enemyKilled();
     void loadHighScores();
     void saveHighScores();
-    void generateDefaultLevel(int levelNumber);
-    void spawnEnemy(int levelNumber);
-    void startLevelTransition(int newLevel) ;
+
 };
-
-
-
