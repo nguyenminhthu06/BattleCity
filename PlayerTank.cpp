@@ -109,3 +109,6 @@ void PlayerTank::render(SDL_Renderer* renderer) {
 void PlayerTank::setSpeed(float newSpeed) {
     speed = newSpeed;
 }
+
+
+

@@ -127,7 +127,6 @@ Game::~Game() {
 void Game::run() {
     Uint32 lastTime = SDL_GetTicks();
     while (running) {
-        while (running) {
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (currentTime - lastTime) / 1000.0f;
         lastTime = currentTime;
@@ -184,7 +183,7 @@ void Game::run() {
         }
     }
 }
-}
+
 void Game::renderBoldText(const std::string& text, int x, int y, SDL_Color color) {
     // Vẽ chữ nhiều lần với offset nhỏ để tạo hiệu ứng đậm
     for (int i = -1; i <= 1; i++) {
@@ -269,8 +268,8 @@ void Game::generateWalls() {
 void Game::startLevelTransition(int newLevel) {
     if (transitioning) return;
     currentLevel = newLevel;
-    startTransition(GameState::PLAYING);  // Sửa thành PLAYING thay vì VICTORY
-    loadLevel(currentLevel);  // Đảm bảo load level mới
+    loadLevel(currentLevel);
+    startTransition(GameState::PLAYING);
 }
 void Game::spawnEnemies() {
     enemies.clear();
@@ -448,13 +447,11 @@ void Game::render() {
         {
             enemy.render(renderer);
         }
-        if(smallfont && boldfont){
-            TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-            renderText("Level: " + std::to_string(currentLevel), 6, 9, {45,87,67,255},smallfont);
-            renderText("Score: " + std::to_string(score), 6, 39, {45,87,67,255},smallfont);
-            renderText("High Score: " + std::to_string(highScores[currentLevel]), 6, 69, {45,87,67,255},smallfont);
-            TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
-        }
+
+        renderText("Level: " + std::to_string(currentLevel), 6, 9, {45,87,67,255},smallfont);
+        renderText("Score: " + std::to_string(score), 6, 39, {45,87,67,255},smallfont);
+        renderText("High Score: " + std::to_string(highScores[currentLevel]), 6, 69, {45,87,67,255},smallfont);
+
         renderTransition();
         SDL_RenderPresent(renderer);
     }
@@ -690,7 +687,7 @@ void Game::handleVictoryEvents() {
                 int nextLevel = currentLevel + 1;
 
                 if (nextLevel > MAX_LEVEL) {
-                    state = GameState::GAME_COMPLETE; // Thêm trạng thái mới
+                    state = GameState::GAME_COMPLETE;
                     currentLevel = 1;
                 } else {
                     currentLevel = nextLevel;
@@ -758,19 +755,32 @@ bool Game::isMouseOver(const SDL_Rect& rect, int x, int y) {
 }
 
 void Game::renderText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* font) {
-    if (!font) font = smallfont;
+    if (!font) {
+        if (!smallfont) return;
+        font = smallfont;
+    }
 
     SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
-    if (surface) {
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-        if (texture) {
-            SDL_Rect rect = {x, y, surface->w, surface->h};
-            SDL_RenderCopy(renderer, texture, nullptr, &rect);
-            SDL_DestroyTexture(texture);
-        }
-        SDL_FreeSurface(surface);
+    if (!surface) {
+        SDL_Log("TTF_RenderText_Solid failed: %s", TTF_GetError());
+        return;
     }
+    int w = surface->w;
+    int h = surface->h;
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    if (!texture) {
+        SDL_Log("SDL_CreateTextureFromSurface failed: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_Rect rect = {x, y, w, h};
+    SDL_RenderCopy(renderer, texture, nullptr, &rect);
+    SDL_DestroyTexture(texture);
 }
+
 
 void Game::startTransition(GameState newState) {
     if (transitioning) {
@@ -826,14 +836,12 @@ void Game::loadLevel(int levelNumber) {
     walls.clear();
     enemies.clear();
     player.bullets.clear();
-    player.setPosition(((MAP_WIDTH-1)/2)*TILE_SIZE, (MAP_HEIGHT-2)*TILE_SIZE);
 
     std::string path = "D:/A_Teaching/LTNC/2024/DEMO/level" + std::to_string(levelNumber) + ".txt";
-    std::cout << "Attempting to load level from: " << path << std::endl;  // Debug
-
     std::ifstream file(path);
+
     if (!file.is_open()) {
-        std::cerr << "Failed to open level file: " << path << " - Error: " << std::endl;
+        std::cerr << "Cannot open level file: " << path << " - Using default level\n";
         generateDefaultLevel(levelNumber);
         return;
     }
@@ -844,23 +852,24 @@ void Game::loadLevel(int levelNumber) {
         for (int x = 0; x < line.size() && x < MAP_WIDTH; x++) {
             char c = line[x];
             switch (c) {
-                case '#':
+                case '#': // Wall
                     walls.emplace_back(x * TILE_SIZE, y * TILE_SIZE, wallTexture);
                     break;
-                case 'E':
-                    enemies.emplace_back(x * TILE_SIZE, y * TILE_SIZE);
-                    enemies.back().setTexture(enemyTexture);
-                    enemies.back().setSpeed(1.0f + (levelNumber * 0.5f));
+                case 'E': // Enemy
+                {
+                    EnemyTank enemy(x * TILE_SIZE, y * TILE_SIZE);
+                    enemy.setTexture(enemyTexture);
+                    enemy.setSpeed(1.0f + (levelNumber * 0.5f));
+                    enemies.push_back(enemy);
                     break;
-                case 'P':
+                }
+                case 'P': // Player
                     player.setPosition(x * TILE_SIZE, y * TILE_SIZE);
                     break;
-                case '.':
-                    // Empty space - do nothing
+                case '.': // Empty space
                     break;
                 default:
-                    std::cerr << "Unknown character in level file: '" << c << "' at ("
-                              << x << "," << y << ")" << std::endl;
+                    std::cerr << "Unknown character in level file: '" << c << "'\n";
             }
         }
         y++;
@@ -868,7 +877,6 @@ void Game::loadLevel(int levelNumber) {
     }
     file.close();
     score = 0;
-
 }
 
 void Game::generateDefaultLevel(int levelNumber) {
@@ -943,3 +951,6 @@ void Game::spawnEnemy(int levelNumber) {
     e.setSpeed(1.0f + (levelNumber * 0.5f)); // Faster enemies in higher levels
     enemies.push_back(e);
 }
+
+
+
